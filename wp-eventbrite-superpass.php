@@ -164,7 +164,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
 
             // Plugin Folder URL
             if ( ! defined ( 'ESP_PLUGIN_URL' ) ) {
-                define( 'EDD_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+                define( 'ESP_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
             }
 
             // Plugin Root File
@@ -211,3 +211,18 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
     }
 
 endif; // End class check
+
+/**
+ * The main function that returns the one instance of our main class
+ *
+ * Usage: <?php $esp = ESP(); ?>
+ *
+ * @since 1.0
+ * @return object|WP_Eventbrite_Superpass
+ */
+function ESP() {
+    return WP_Eventbrite_Superpass::instance();
+}
+
+// Start the main class
+ESP();
