@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Easy Digital Downloads
+ * Plugin Name: WP Eventbrite Superpass
  * Plugin URI: https://shadowsoftware.solutions
  * Description: The easiest way to sell digital products with WordPress.
  * Author: Simon Chawla
