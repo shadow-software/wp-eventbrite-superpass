@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP Eventbrite Superpass
  * Plugin URI: https://shadowsoftware.solutions
- * Description: The easiest way to sell digital products with WordPress.
+ * Description: WP Event Superpass allows event organizers using eventbrite to sell all inclusive passes that gives users access to any event that they are managing.
  * Author: Simon Chawla
  * Author URI: https://shadowsoftware.solutions
  * Version: 0.0.1
@@ -140,7 +140,14 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          * @return void
          */
         private function includes() {
+            // Third Party Stuff
             require_once ESP_PLUGIN_DIR . 'includes/libraries/Eventbrite.php';
+
+            // Admin
+            require_once  ESP_PLUGIN_DIR . 'includes/admin/admin_page.php';
+
+            // Misc
+            require_once  ESP_PLUGIN_DIR . 'includes/scripts.php';
         }
 
         /**
@@ -170,6 +177,11 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
             // Plugin Root File
             if ( ! defined ( 'ESP_PLUGIN_FILE' ) ) {
                 define( 'ESP_PLUGIN_FILE', __FILE__ );
+            }
+
+            // Shadow Website, for plugs n' stuff
+            if ( ! defined ( 'SHADOW_SITE_URL' ) ) {
+                define( 'SHADOW_SITE_URL', "https://shadowsoftware.solutions");
             }
         }
 
