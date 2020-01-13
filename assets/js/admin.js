@@ -27,30 +27,56 @@ document.addEventListener('DOMContentLoaded', (e) => {
             data.append('action', 'get_esp_settings');
             axios.post(ajaxurl, data)
                 .then(response => (this.settings = response.data))
-                .then(() => {this.ready = true})
+                .then(() => {
+                    this.ready = true;
+                    setTimeout( () => {
+                        this.setupMaterialUtils();
+                        this.setupState();
+                    }, 100)
+                })
         },
         methods: {
+            setupState: function() {
+                if (this.settings.eventbrite_setup_required === true) {
+                    // Check if we are being redirected to this page from eventbrite with an access code.
+                    var code = getAllUrlParams().code;
+                    if (code) {
+                        // Great we have our access code now! Let's save it on the server
+                        var data = new FormData();
+                        data.append('action', 'setup_esp_eventbrite_keys');
+                        data.append('access_code', code);
+
+                        axios
+                            .post(ajaxurl, data)
+                            .then( response => {
+                                if (response.data.success === true) {
+                                    this.settings.eventbrite_setup_required = false;
+                                } else {
+                                    this.message.content = response.data.message;
+                                    this.message.type = 'error';
+                                    this.message.show = true;
+                                }
+                            })
+                    }
+                }
+            },
             eventbriteSetup: function () {
                 if (!this.updating && this.checkEventbriteData()) {
                     this.updating = true;
                     let data = new FormData();
                     data.append('action', 'setup_esp_eventbrite_keys');
                     data.append('api_key', this.eventbriteData.appKey);
-                    data.append('access_code', this.eventbriteData.accessCode);
-                    data.append('client_secret', this.eventbriteData.accessCode);
+                    data.append('client_secret', this.eventbriteData.clientSecret);
 
                     axios
                         .post(ajaxurl, data)
                         .then(response => {
                             if (response.data.success === true) {
+                                window.location.href = response.data.link;
+                            } else if (response.data.success === false) {
                                 this.message.content = response.data.message;
-                                this.message.type = "success";
+                                this.message.type = 'error';
                                 this.message.show = true;
-                                setTimeout(() => {
-                                    this.message.show = false
-                                }, 5000);
-                            } else {
-
                             }
                         })
                         .catch(error => {
@@ -62,7 +88,17 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 }
             },
             checkEventbriteData: function () {
-                return this.eventbriteData.accessCode && this.eventbriteData.clientSecret && this.eventbriteData.appKey;
+                return this.eventbriteData.clientSecret && this.eventbriteData.appKey;
+            },
+            setupMaterialUtils: function () {
+                console.log('hit')
+                var elems = document.querySelectorAll('.collapsible');
+                var options = {
+                    'accordion' : true,
+                    'inDuration' : 300,
+                    'outDuration' : 300,
+                }
+                var instances = M.Collapsible.init(elems, options);
             }
         }
     });
@@ -81,5 +117,4 @@ document.addEventListener('DOMContentLoaded', (e) => {
             '    </div>\n' +
             '  </div>',
     });
-
 });

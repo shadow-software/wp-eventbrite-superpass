@@ -38,25 +38,37 @@ function setup_esp_eventbrite_keys() {
         "message" => "",
     );
 
-    if ( !empty( $_POST[ 'api_key' ] ) && !empty( $_POST[ 'client_secret'] ) && !empty( $_POST[ 'access_code' ] ) ) {
+    // Setup api key && client_secret
+    if ( ! empty( $_POST[ 'api_key' ] ) && ! empty( $_POST[ 'client_secret'] ) ) {
         $esp = ESP();
 
         $esp->set_eventbrite_keys( $_POST );
 
-        $result = $esp->eventbrite_keys_valid();
-        header( 'Content-type: application/json' );
-        echo json_encode( $result );
-        wp_die();
-        if ( $esp->eventbrite_keys_valid() ){
-            $result[ 'success' ] = true;
-            $result[ 'message' ] = "Successfully connected to Eventbrite!";
-        } else {
+        // First let's see if these keys are valid
+        $check = $esp->eventbrite_keys_valid();
+        if ( strpos( $check[ 'error_description' ], 'client_id' ) !== false && strpos( $check[ 'error_description' ], 'client_secret' ) !== false ){
             $result[ 'success' ] = false;
-            $result[ 'message' ] = "One or more fields were invalid, please check to make sure you have the right information!";
+            $result[ 'message' ] = $check[ 'error_description' ];
+        } else {
+            $link = $esp->eb_sdk->createAuthLink($esp->api_key);
+            $result[ 'link' ] = $link;
+            $result[ 'success' ] = true;
         }
-    } else {
-        $result[ 'success' ] = false;
-        $result[ 'message' ] = "Please fill out all 3 fields";
+    }
+
+    // Check if we're getting an access code
+    if ( ! empty( $_POST[ 'access_code' ] ) ) {
+        $esp = ESP();
+
+        $esp->set_eventbrite_keys( $_POST );
+
+        $check = $esp->eventbrite_keys_valid();
+        if ( strpos( $check[ 'error_description' ], 'code' ) !== false ) {
+            $result[ 'success' ] = false;
+            $result[ 'message' ] = $check[ 'error_description' ];
+        } else {
+            $result[ 'success' ] = true;
+        }
     }
 
     if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {

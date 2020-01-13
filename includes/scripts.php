@@ -30,7 +30,9 @@ function load_scripts( $hook ) {
         wp_enqueue_style( '', 'https://fonts.googleapis.com/icon?family=Material+Icons' );
         wp_enqueue_script( 'materialize', 'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js', [], '1.0.0' );
         wp_register_script( 'esp-admin-scripts', $js_dir . 'admin.js', [], ESP_VERSION, false );
+        wp_register_script( 'esp-misc-scripts', $js_dir . 'helpers.js', [], ESP_VERSION, false );
         wp_enqueue_script( 'esp-admin-scripts' );
+        wp_enqueue_script( 'esp-misc-scripts' );
         wp_localize_script( 'esp-admin-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
     }
 }
