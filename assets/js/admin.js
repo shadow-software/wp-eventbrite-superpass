@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                         // Great we have our access code now! Let's save it on the server
                         var data = new FormData();
                         data.append('action', 'setup_esp_eventbrite_keys');
-                        data.append('access_code', code);
+                        data.append('access_code', code.toUpperCase());
 
                         axios
                             .post(ajaxurl, data)

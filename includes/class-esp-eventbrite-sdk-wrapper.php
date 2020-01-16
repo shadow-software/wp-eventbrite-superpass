@@ -64,4 +64,18 @@ class ESP_Eventbrite_SDK_Wrapper {
     public function createAuthLink( $app_key ) {
         return createAuthorizeUrl( $app_key ) . '&redirect_uri=' . get_admin_url() . 'admin.php?page=eventbrite-superpass';
     }
+
+    /**
+     * Accept token and create client.
+     *
+     * @since 1.0
+     * @access public
+     * @param $token
+     * @return void
+     */
+    public function setup_client( $token ) {
+        if ( ! isset($this->client) ) {
+            $this->client = new HttpClient( $token );
+        }
+    }
 }

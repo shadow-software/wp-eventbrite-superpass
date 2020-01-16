@@ -81,6 +81,15 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         public $access_code;
 
         /**
+         * Eventbrite Token
+         *
+         * Token from Eventbrite's API, gets reset when the token is invalid
+         * @var string
+         * @since 1.0
+         */
+        public $token;
+
+        /**
          * Instance of the Eventbrite SDK Wrapper
          *
          * @var object|Eventbrite
@@ -148,18 +157,20 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         public function set_eventbrite_keys( $eb_keys ) {
             if ( isset( $eb_keys[ 'api_key' ] ) ) {
                 self::$instance->api_key        = $eb_keys[ 'api_key' ];
+                update_post_meta( self::$instance->post_id, 'EVENTBRITE_API_KEY', self::$instance->api_key );
             }
             if ( isset( $eb_keys[ 'access_code' ] ) ) {
                 self::$instance->access_code    = $eb_keys[ 'access_code' ];
+                update_post_meta( self::$instance->post_id, 'EVENTBRITE_ACCESS_CODE', self::$instance->access_code );
             }
-            if ( isset( $eb_keys[ 'access_code' ] ) ) {
+            if ( isset( $eb_keys[ 'client_secret' ] ) ) {
                 self::$instance->client_secret  = $eb_keys[ 'client_secret' ];
+                update_post_meta( self::$instance->post_id, 'EVENTBRITE_CLIENT_SECRET', self::$instance->client_secret );
             }
-
-            // When we set the event keys we want to save them to the database, overwriting any old info
-            update_post_meta( self::$instance->post_id, 'EVENTBRITE_API_KEY', self::$instance->api_key );
-            update_post_meta( self::$instance->post_id, 'EVENTBRITE_ACCESS_CODE', self::$instance->access_code );
-            update_post_meta( self::$instance->post_id, 'EVENTBRITE_CLIENT_SECRET', self::$instance->client_secret );
+            if( isset( $eb_keys[ 'token' ] ) ) {
+                self::$instance->token = $eb_keys[ 'token' ];
+                update_post_meta( self::$instance->post_id, 'EVENTBRITE_TOKEN', self::$instance->token );
+            }
         }
 
         /**
@@ -230,15 +241,19 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
             $values = get_post_meta( self::$instance->post_id );
 
             if ( isset( $values[ 'EVENTBRITE_API_KEY' ] ) ) {
-                self::$instance->api_key = $values[ 'EVENTBRITE_API_KEY' ];
+                self::$instance->api_key = $values[ 'EVENTBRITE_API_KEY' ][0];
             }
 
             if ( isset( $values[ 'EVENTBRITE_CLIENT_SECRET' ] ) ) {
-                self::$instance->client_secret =  $values[ 'EVENTBRITE_CLIENT_SECRET' ];
+                self::$instance->client_secret =  $values[ 'EVENTBRITE_CLIENT_SECRET' ][0];
             }
 
             if ( isset( $values [ 'EVENTBRITE_ACCESS_CODE' ] ) ) {
-                self::$instance->access_code = $values [ 'EVENTBRITE_ACCESS_CODE' ];
+                self::$instance->access_code = $values [ 'EVENTBRITE_ACCESS_CODE' ][0];
+            }
+
+            if ( isset( $values[ 'EVENTBRITE_TOKEN' ] ) ) {
+                self::$instance->token = $values[ 'EVENTBRITE_TOKEN' ][0];
             }
         }
 
@@ -283,6 +298,11 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          * @return boolean
          */
         public function eventbrite_keys_valid() {
+            if ( isset( self::$instance->token ) ) {
+                self::$instance->eb_sdk->setup_client( self::$instance->token );
+                $user = self::$instance->eb_sdk->client->get('/users/me');
+                return isset( $user['id'] );
+            }
             // If none of the keys have been set, obviously it's not valid
             if ( ! isset( self::$instance->api_key ) && ! isset( self::$instance->client_secret ) ) {
                 return false;
@@ -302,10 +322,16 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         private function compile_settings() {
             global $esp_settings;
 
-            $connection_result = self::$instance->eventbrite_keys_valid();
+            $connection_result  = self::$instance->eventbrite_keys_valid();
+            $setup_required     = isset( $connection_result['error'] );
             $esp_settings = array(
-                'eventbrite_setup_required' => true,
+                'eventbrite_setup_required' => $setup_required,
             );
+
+            // Conditional settings
+            if( ! $setup_required ) {
+                $esp_settings[ 'eventbrite_user' ] = self::$instance->eb_sdk->client->get( '/users/me');
+            }
         }
     }
 

@@ -68,6 +68,7 @@ function setup_esp_eventbrite_keys() {
             $result[ 'message' ] = $check[ 'error_description' ];
         } else {
             $result[ 'success' ] = true;
+            $esp->set_eventbrite_keys( [ 'token' => $check['access_token'] ] );
         }
     }
 
