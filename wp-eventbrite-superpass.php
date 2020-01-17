@@ -98,6 +98,15 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         public $eb_sdk;
 
         /**
+         * Collection of exisiting Super Passes
+         *
+         * @access public
+         * @var array|ESP_Super_Pass
+         * @since 1.0
+         */
+        public $super_passes;
+
+        /**
          * Main Class Instance
          *
          * Insures that only once instance of the main class exists in memory at one time.
@@ -189,6 +198,9 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
 
             // Functions
             require_once ESP_PLUGIN_DIR . 'includes/actions.php';
+
+            // Classes
+            require_once ESP_PLUGIN_DIR . 'includes/class-esp-super-pass.php';
 
             // Misc
             require_once  ESP_PLUGIN_DIR . 'includes/scripts.php';
@@ -291,6 +303,34 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         }
 
         /**
+         * Retrieve the serialized array of passes from DB
+         *
+         * @access public
+         * @since 1.0
+         * @return void
+         */
+        public function get_super_passes() {
+            // If there's no token we don't have any passes.
+            if ( isset( self::$instance->token ) ) {
+                $result = get_post_meta( self::$instance->post_id, 'ESP_SUPER_PASSES', true );
+                self::$instance->super_passes = unserialize( $result );
+            }
+        }
+
+        /**
+         * Add super pass and save to DB
+         *
+         * @access public
+         * @since 1.0
+         * @return boolean
+         */
+        public function add_super_pass( ESP_Super_Pass $super_pass ) {
+            array_push( self::$instance->super_passes, $super_pass );
+            $result = update_post_meta( self::$instance->post_id, 'ESP_SUPER_PASSES', serialize( self::$instance->super_passes ) );
+            return $result !== false;
+        }
+
+        /**
          * Check if the Eventbrite keys we have are valid by attempting to connect
          *
          * @access public
@@ -323,14 +363,15 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
             global $esp_settings;
 
             $connection_result  = self::$instance->eventbrite_keys_valid();
-            $setup_required     = isset( $connection_result['error'] );
+            $setup_required     = isset( $connection_result['error'] ) || $connection_result === false;
             $esp_settings = array(
                 'eventbrite_setup_required' => $setup_required,
             );
 
             // Conditional settings
             if( ! $setup_required ) {
-                $esp_settings[ 'eventbrite_user' ] = self::$instance->eb_sdk->client->get( '/users/me');
+                $esp_settings[ 'eventbrite' ]['user'] = self::$instance->eb_sdk->client->get( '/users/me');
+                $esp_settings[ 'eventbrite' ] = self::$instance->eb_sdk->client->get('/users/me/events');
             }
         }
     }

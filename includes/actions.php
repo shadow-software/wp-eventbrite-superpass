@@ -39,7 +39,7 @@ function setup_esp_eventbrite_keys() {
     );
 
     // Setup api key && client_secret
-    if ( ! empty( $_POST[ 'api_key' ] ) && ! empty( $_POST[ 'client_secret'] ) ) {
+    if ( ! empty( $_POST[ 'api_key' ] ) && ! empty( $_POST[ 'client_secret' ] ) ) {
         $esp = ESP();
 
         $esp->set_eventbrite_keys( $_POST );
@@ -79,3 +79,17 @@ function setup_esp_eventbrite_keys() {
     }
 }
 add_action( 'wp_ajax_setup_esp_eventbrite_keys', 'setup_esp_eventbrite_keys', 10 );
+
+function create_super_pass() {
+    $result = array(
+        "success" => null,
+        "message" => "",
+    );
+
+    if ( ! empty( $_POST[ 'name' ] && ! empty( $_POST[ 'cost' ] ) ) ) {
+        $name = sanitize_text_field( $_POST[ 'name' ] );
+        $cost = sanitize_text_field( $_POST[ 'cost' ] );
+
+        $super_pass = new ESP_Super_Pass( $cost, $name );
+    }
+}

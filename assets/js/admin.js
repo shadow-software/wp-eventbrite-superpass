@@ -14,12 +14,14 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 content: "",
                 type: "",
             },
+            editingPasses: false,
             ready: false,
             eventbriteData: {
                 appKey: undefined,
                 accessCode: undefined,
                 clientSecret: undefined,
-            }
+            },
+            creatingPass: false,
         },
         mounted: function () {
             document.getElementById('esp-admin-app').style.display = "block";
@@ -30,7 +32,6 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 .then(() => {
                     this.ready = true;
                     setTimeout( () => {
-                        this.setupMaterialUtils();
                         this.setupState();
                     }, 100)
                 })
@@ -90,16 +91,6 @@ document.addEventListener('DOMContentLoaded', (e) => {
             checkEventbriteData: function () {
                 return this.eventbriteData.clientSecret && this.eventbriteData.appKey;
             },
-            setupMaterialUtils: function () {
-                console.log('hit')
-                var elems = document.querySelectorAll('.collapsible');
-                var options = {
-                    'accordion' : true,
-                    'inDuration' : 300,
-                    'outDuration' : 300,
-                }
-                var instances = M.Collapsible.init(elems, options);
-            }
         }
     });
 
