@@ -104,7 +104,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          * @var array|ESP_Super_Pass
          * @since 1.0
          */
-        public $super_passes;
+        public $super_passes = array();
 
         /**
          * Main Class Instance
@@ -127,6 +127,11 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
 
                 self::$instance->includes();
                 self::$instance->eb_sdk = new ESP_Eventbrite_SDK_Wrapper();
+                if ( isset( self::$instance->token ) ) {
+                    // Setup client if one time token exists.
+                    self::$instance->eb_sdk->setup_client( self::$instance->token );
+                }
+                self::$instance->get_super_passes();
                 self::$instance->compile_settings();
             }
 
@@ -310,10 +315,21 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          * @return void
          */
         public function get_super_passes() {
-            // If there's no token we don't have any passes.
-            if ( isset( self::$instance->token ) ) {
-                $result = get_post_meta( self::$instance->post_id, 'ESP_SUPER_PASSES', true );
-                self::$instance->super_passes = unserialize( $result );
+            $args = array(
+                'post_type' => 'ESP_SUPER_PASS',
+                'post_status' => 'draft',
+                'numberposts' => -1,
+            );
+            $results = get_posts( $args );
+            foreach ( $results as $result ) {
+                $values = get_post_meta( $result->ID );
+                $super_pass = new ESP_Super_Pass( $values[ 'ESP_SUPER_PASS_COST' ][0], $result->post_title, $result->ID );
+                $events = explode( ',', $values[ 'ESP_SUPER_PASS_EVENT'][0] );
+                foreach ( $events as $event ) {
+                    $super_pass->events[] = $event;
+                }
+                $super_pass->gather_event_data();
+                self::$instance->super_passes[] = $super_pass;
             }
         }
 
@@ -321,13 +337,13 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          * Add super pass and save to DB
          *
          * @access public
-         * @since 1.0
+         * @param ESP_Super_Pass $super_pass
          * @return boolean
+         * @since 1.0
          */
         public function add_super_pass( ESP_Super_Pass $super_pass ) {
             array_push( self::$instance->super_passes, $super_pass );
-            $result = update_post_meta( self::$instance->post_id, 'ESP_SUPER_PASSES', serialize( self::$instance->super_passes ) );
-            return $result !== false;
+            return true;
         }
 
         /**
@@ -339,7 +355,6 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          */
         public function eventbrite_keys_valid() {
             if ( isset( self::$instance->token ) ) {
-                self::$instance->eb_sdk->setup_client( self::$instance->token );
                 $user = self::$instance->eb_sdk->client->get('/users/me');
                 return isset( $user['id'] );
             }
@@ -370,7 +385,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
 
             // Conditional settings
             if( ! $setup_required ) {
-                $esp_settings[ 'eventbrite' ]['user'] = self::$instance->eb_sdk->client->get( '/users/me');
+                $esp_settings[ 'eventbrite' ][ 'user' ] = self::$instance->eb_sdk->client->get( '/users/me');
                 $esp_settings[ 'eventbrite' ] = self::$instance->eb_sdk->client->get('/users/me/events');
             }
         }

@@ -94,13 +94,12 @@ function main() {
                         </tr>
                         </thead>
                         <tbody>
-                        <tr>
-                            <td>Halifax All Inclusive Pass</td>
-                            <td>$700.00</td>
+                        <tr v-for="superpass in superPasses">
+                            <td>{{superpass.name}}</td>
+                            <td>${{superpass.cost}}</td>
                             <td style="position: relative;">
                                 <ul>
-                                    <li>Event 1</li>
-                                    <li>Event 2</li>
+                                    <li v-for="event in superpass.events"><a :href="event.url" target="_blank">{{ event.name.text }}</a></li>
                                 </ul>
                                 <div style="position: absolute;top: calc(30%);right: 20px;">
                                     <a class="btn btn-danger text-white">DELETE</a>
@@ -117,7 +116,7 @@ function main() {
                             <div class="col">
                                 <div class="form-group">
                                     <label for="name">Super Pass Name:</label>
-                                    <input placeholder="Name" id="name" type="text" class="form-control" />
+                                    <input v-model="superPass.name" placeholder="Name" id="name" type="text" class="form-control" />
                                 </div>
                             </div>
                             <div class="col">
@@ -127,22 +126,33 @@ function main() {
                                         <div class="input-group-prepend">
                                             <div class="input-group-text">$</div>
                                         </div>
-                                        <input type="text" class="form-control" id="cost" placeholder="0.00">
+                                        <input v-model="superPass.cost" type="text" class="form-control" id="cost" placeholder="0.00">
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="row">
                             <ul class="list-group col">
-                                <button v-for="event in settings.eventbrite.events" type="button" class="list-group-item list-group-item-action">
+                                <button v-for="event in settings.eventbrite.events" v-on:click="toggleEvent" :value="event.id" type="button" class="list-group-item list-group-item-action" :class="{active : superPass.events.includes(event.id)}">
                                     {{event.name.text}}
                                 </button>
                             </ul>
                         </div>
                         <div class="row mt-3">
                             <div class="m-auto">
-                                <div class="btn btn-primary m-auto">Create</div>
-                                <div v-on:click="creatingPass = false" class="btn btn-warning m-auto">Cancel</div>
+                                <div v-on:click="createSuperPass" class="btn btn-primary m-auto" :class="{disabled : !superPassValid()}">
+                                    <span v-if="!updating">
+                                        Create
+                                    </span>
+                                    <span v-if="updating">
+                                        <div class="text-center">
+                                            <div class="spinner-border text-light" role="status">
+                                                <span class="sr-only">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </span>
+                                </div>
+                                <div v-on:click="creatingPass = false" class="btn btn-warning m-auto" v-if="!updating">Cancel</div>
                             </div>
                         </div>
                     </div>
