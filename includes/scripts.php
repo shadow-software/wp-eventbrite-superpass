@@ -20,6 +20,8 @@ if ( ! defined ( 'ABSPATH' ) ) exit;
  */
 function load_scripts( $hook ) {
     $js_dir = ESP_PLUGIN_URL . 'assets/js/';
+    $css_dir = ESP_PLUGIN_URL . 'assets/css/';
+
     // Get Vue, we're going to use the development version for now
     wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue/dist/vue.js', []);
 
@@ -28,6 +30,7 @@ function load_scripts( $hook ) {
         wp_enqueue_script('axios', 'https://unpkg.com/axios@0.19.0/dist/axios.min.js', [], '0.19.0');
         wp_register_style( 'bootstrap', 'https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css', [], '4.4.1' );
         wp_enqueue_style( 'bootstrap');
+        wp_enqueue_style( 'extra', $css_dir . 'extra.css' );
         wp_style_add_data( 'bootstrap', array( 'integrity', 'crossorigin' ) , array( 'sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh', 'anonymous' ) );
         wp_register_script( 'bootstrap', 'https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js', ['jquery'], '4.4.1' );
         wp_enqueue_script( 'bootstrap');

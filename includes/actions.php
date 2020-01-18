@@ -130,3 +130,30 @@ function esp_create_super_pass() {
     }
 }
 add_action( 'wp_ajax_esp_create_super_pass', 'esp_create_super_pass' );
+
+function esp_delete_super_pass() {
+    $result = array(
+      'success' => false,
+    );
+
+    if ( isset( $_POST[ 'id' ] ) ) {
+        $esp = ESP();
+        $id = (int) $_POST[ 'id' ];
+        foreach( $esp->super_passes as $super_pass ) {
+            if ( $super_pass->id === $id ) {
+                $super_pass->self_destruct();
+                $result = array(
+                    'success' => true,
+                    'message' => "Super Pass deleted."
+                );
+            }
+        }
+    }
+
+    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( "Content-type: application/json" );
+        echo json_encode( $result );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_delete_super_pass', 'esp_delete_super_pass' );

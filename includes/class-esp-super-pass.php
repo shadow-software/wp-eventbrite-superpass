@@ -128,8 +128,33 @@ class ESP_Super_Pass {
         $esp = ESP();
         foreach( $this->events as &$event ) {
             if ( ! is_array( $event ) || ! is_object( $event )) {
-                $event = $esp->eb_sdk->client->get("/events/{$event}");
+                foreach( $esp->events as $event_data ) {
+                    if ( $event_data[ 'id' ] === $event ) {
+                        $event = $event_data;
+                        break;
+                    }
+                }
             }
         }
+    }
+
+    /**
+     * Goodbye :( (delete this class and remove it from the database)
+     *
+     * @since 1.0
+     * @access public
+     * @return boolean
+     */
+    public function self_destruct() {
+        // Remove it from esp's collection.
+        $esp = ESP();
+        foreach( $esp->super_passes as &$super_pass ) {
+            if ( $super_pass->id === $this->id ) {
+                unset( $super_pass );
+            }
+        }
+        // Remove from DB
+        $result = wp_delete_post( $this->id );
+        return $result !== false && $result !== null;
     }
 }

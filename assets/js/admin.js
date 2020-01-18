@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 cost : 0.00,
                 events: [],
             },
+            superPassUpdating: false,
             queuedActions : 0,
         },
         mounted: function () {
@@ -71,6 +72,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                         } else {
                             this.ready = true;
                         }
+                        this.superPassUpdating = false;
                     });
             },
             setupState: function() {
@@ -125,8 +127,8 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 }
             },
             createSuperPass: function() {
-              if (!this.updating && this.superPassValid()) {
-                  this.updating = true;
+              if (!this.superPassUpdating && this.superPassValid()) {
+                  this.superPassUpdating = true;
                   let data = new FormData();
                   data.append('action', 'esp_create_super_pass');
                   data.append('name', this.superPass.name);
@@ -146,15 +148,34 @@ document.addEventListener('DOMContentLoaded', (e) => {
                               this.getSuperPasses();
                           } else {
                               this.message.show = true;
-                              this.message.content = response.data.message;
+                              this.message.content = response.data.message; 
                               this.message.type = "warning";
                           }
                       })
                       .catch(error => {
                           console.log(error);
                       })
-                      .then(() => {
-                          this.updating = false;
+              }
+            },
+            deleteSuperPass: function(e) {
+              if (!this.superPassUpdating) {
+                  this.superPassUpdating = true;
+                  var id = parseInt(e.target.value);
+                  var data = new FormData();
+                  data.append('action', 'esp_delete_super_pass');
+                  data.append('id', id);
+
+                  axios
+                      .post(ajaxurl, data)
+                      .then(response => {
+                          if (response.data.success === true) {
+                              this.getSuperPasses();
+                          } else {
+                              // Display error message
+                          }
+                      })
+                      .catch(error => {
+                         console.log(error);
                       })
               }
             },

@@ -84,7 +84,20 @@ function main() {
         <div v-if="!this.settings.eventbrite_setup_required && ready" class="row">
             <div class="card border-primary mb-2 w-100 p-0 m-auto" style="max-width:unset">
                 <div class="card-header">Manage Super Passes</div>
-                <div class="card-body">
+                <div class="card-body" :class="{frozen : superPassUpdating}">
+                    <div v-if="superPassUpdating"
+                        style="
+                        position: absolute;
+                        margin: 0 auto;
+                        left: calc(50%);
+                        top: calc(40%);
+                    ">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
                     <table class="table table-bordered table-striped">
                         <thead class="thead-dark">
                         <tr>
@@ -102,7 +115,7 @@ function main() {
                                     <li v-for="event in superpass.events"><a :href="event.url" target="_blank">{{ event.name.text }}</a></li>
                                 </ul>
                                 <div style="position: absolute;top: calc(30%);right: 20px;">
-                                    <a class="btn btn-danger text-white">DELETE</a>
+                                    <button v-on:click="deleteSuperPass" :value="superpass.id" class="btn btn-danger text-white">DELETE</button>
                                 </div>
                             </td>
                         </tr>

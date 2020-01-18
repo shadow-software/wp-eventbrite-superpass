@@ -107,6 +107,15 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         public $super_passes = array();
 
         /**
+         * Collection of Events. Instead of making multiple calls, call once and then associate by ID.
+         *
+         * @access public
+         * @var array
+         * @since 1.0
+         */
+        public $events = array();
+
+        /**
          * Main Class Instance
          *
          * Insures that only once instance of the main class exists in memory at one time.
@@ -130,6 +139,8 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
                 if ( isset( self::$instance->token ) ) {
                     // Setup client if one time token exists.
                     self::$instance->eb_sdk->setup_client( self::$instance->token );
+                    self::$instance->events = self::$instance->eb_sdk->client->get('/users/me/events');
+                    self::$instance->events = self::$instance->events[ 'events' ];
                 }
                 self::$instance->get_super_passes();
                 self::$instance->compile_settings();
@@ -378,15 +389,14 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
             global $esp_settings;
 
             $connection_result  = self::$instance->eventbrite_keys_valid();
-            $setup_required     = isset( $connection_result['error'] ) || $connection_result === false;
+            $setup_required     = isset( $connection_result[ 'error' ] ) || $connection_result === false;
             $esp_settings = array(
                 'eventbrite_setup_required' => $setup_required,
             );
 
             // Conditional settings
             if( ! $setup_required ) {
-                $esp_settings[ 'eventbrite' ][ 'user' ] = self::$instance->eb_sdk->client->get( '/users/me');
-                $esp_settings[ 'eventbrite' ] = self::$instance->eb_sdk->client->get('/users/me/events');
+                $esp_settings[ 'eventbrite' ][ 'events' ]   = self::$instance->events;
             }
         }
     }
