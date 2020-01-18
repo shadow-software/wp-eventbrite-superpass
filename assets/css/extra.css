@@ -1,0 +1,4 @@
+.frozen {
+    -webkit-filter: contrast(50%); /* Safari 6.0 - 9.0 */
+    filter: contrast(50%);
+}

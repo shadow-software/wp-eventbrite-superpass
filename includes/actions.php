@@ -27,6 +27,22 @@ function get_esp_settings() {
 add_action( 'wp_ajax_get_esp_settings', 'get_esp_settings', 10 );
 
 /**
+ * Get current super passes
+ *
+ * @since 1.0
+ * @return void
+ */
+function esp_get_super_passes() {
+    if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        $esp = ESP();
+        header( "Content-type: application/json" );
+        echo json_encode( $esp->super_passes );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_get_super_passes', 'esp_get_super_passes', 10 );
+
+/**
  * Set Eventbrite keys and test if they are working
  *
  * @since 1.0
@@ -39,7 +55,7 @@ function setup_esp_eventbrite_keys() {
     );
 
     // Setup api key && client_secret
-    if ( ! empty( $_POST[ 'api_key' ] ) && ! empty( $_POST[ 'client_secret'] ) ) {
+    if ( ! empty( $_POST[ 'api_key' ] ) && ! empty( $_POST[ 'client_secret' ] ) ) {
         $esp = ESP();
 
         $esp->set_eventbrite_keys( $_POST );
@@ -79,3 +95,65 @@ function setup_esp_eventbrite_keys() {
     }
 }
 add_action( 'wp_ajax_setup_esp_eventbrite_keys', 'setup_esp_eventbrite_keys', 10 );
+
+function esp_create_super_pass() {
+    $result = array(
+        "success" => null,
+        "message" => "",
+    );
+
+    if ( ! empty( $_POST[ 'name' ] && ! empty( $_POST[ 'cost' ] ) && ! empty( $_POST[ 'events' ] ) ) ) {
+        $name = sanitize_text_field( $_POST[ 'name' ] );
+        $cost = sanitize_text_field( $_POST[ 'cost' ] );
+
+        $events = isset( $_POST['events'] ) ? (array) $_POST['events'] : array();
+        $events = array_map( 'esc_attr', $events );
+        $super_pass = new ESP_Super_Pass( $cost, $name );
+
+        // We want to make sure each event is existing and is okay to add.
+        foreach( $events as $event ) {
+            $super_pass->add_event( $event );
+        }
+
+        $esp = ESP();
+        $esp->add_super_pass( $super_pass );
+        $result[ 'success' ] = true;
+    } else {
+        $result[ 'success' ] = false;
+        $result[ 'message' ] = "Please make sure to create a name and cost for your Super Pass and select at least one event";
+    }
+
+    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( 'Content-type: application/json' );
+        echo json_encode( $result );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_create_super_pass', 'esp_create_super_pass' );
+
+function esp_delete_super_pass() {
+    $result = array(
+      'success' => false,
+    );
+
+    if ( isset( $_POST[ 'id' ] ) ) {
+        $esp = ESP();
+        $id = (int) $_POST[ 'id' ];
+        foreach( $esp->super_passes as $super_pass ) {
+            if ( $super_pass->id === $id ) {
+                $super_pass->self_destruct();
+                $result = array(
+                    'success' => true,
+                    'message' => "Super Pass deleted."
+                );
+            }
+        }
+    }
+
+    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( "Content-type: application/json" );
+        echo json_encode( $result );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_delete_super_pass', 'esp_delete_super_pass' );
