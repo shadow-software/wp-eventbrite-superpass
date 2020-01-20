@@ -208,6 +208,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         private function includes() {
             // Third Party Stuff
             require_once ESP_PLUGIN_DIR . 'includes/class-esp-eventbrite-sdk-wrapper.php';
+            require_once ESP_PLUGIN_DIR . 'includes/woocommerce/actions.php';
 
             // Admin
             require_once ESP_PLUGIN_DIR . 'includes/admin/admin_page.php';
@@ -335,6 +336,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
             foreach ( $results as $result ) {
                 $values = get_post_meta( $result->ID );
                 $super_pass = new ESP_Super_Pass( $values[ 'ESP_SUPER_PASS_COST' ][0], $result->post_title, $result->ID );
+                $super_pass->wc_id = $values[ 'ESP_SUPER_PASS_WC_ID' ][0];
                 $events = explode( ',', $values[ 'ESP_SUPER_PASS_EVENT'][0] );
                 foreach ( $events as $event ) {
                     $super_pass->events[] = $event;

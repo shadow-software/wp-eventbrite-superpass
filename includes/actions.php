@@ -11,6 +11,35 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 /**
+ * Require Woocommerce as a dependency. If not installed, disable the plugin and flash a message
+ *
+ * @since 1.0
+ * @return void
+ */
+function woocommerce_dependency() {
+    if ( is_admin() && current_user_can( 'activate_plugins' ) && ! is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
+        add_action( 'admin_notices', 'dependency_notice' );
+
+        deactivate_plugins( ESP_PLUGIN_FILE );
+
+        if ( isset( $_GET['activate'] ) ) {
+            unset( $_GET['activate'] );
+        }
+    }
+}
+add_action( 'admin_init', 'woocommerce_dependency' );
+
+/**
+ * For flashing dependency message
+ *
+ * @since 1.0
+ * @return voids
+ */
+function dependency_notice(){
+    ?><div class="error"><p>Sorry, WP Eventbrite Superpass requires Woocommerce in order to be used.</p></div><?php
+}
+
+/**
  * Get the settings that the front end will use
  *
  * @since 1.0

@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
             createSuperPass: function() {
               if (!this.superPassUpdating && this.superPassValid()) {
                   this.superPassUpdating = true;
+                  this.updating = true;
                   let data = new FormData();
                   data.append('action', 'esp_create_super_pass');
                   data.append('name', this.superPass.name);
@@ -151,6 +152,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                               this.message.content = response.data.message; 
                               this.message.type = "warning";
                           }
+                          this.updating = false;
                       })
                       .catch(error => {
                           console.log(error);

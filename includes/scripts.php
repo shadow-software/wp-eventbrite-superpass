@@ -42,5 +42,19 @@ function load_scripts( $hook ) {
         wp_localize_script( 'esp-admin-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
     }
 }
-
 add_action( 'admin_enqueue_scripts', 'load_scripts', 100 );
+
+/**
+ * Load our front end scripts
+ *
+ * @since 1.0
+ * @return void
+ */
+function load_frontend_scripts() {
+    global $wp_query;
+    // Only load our custom scripts if we are on our custom endpoint or shortcode page.
+    if ( isset( $wp_query->query_vars['superpass'] ) ) {
+        wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue/dist/vue.js', []);
+    }
+}
+add_action( 'wp_enqueue_scripts', 'load_frontend_scripts' );
