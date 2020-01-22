@@ -26,9 +26,9 @@ class ESP_Customer {
      *
      * @since 1.0
      * @access public
-     * @var object|WP_User
+     * @var integer|WP_User::ID
      */
-    public $wp_user;
+    public $wp_user_id;
 
     /**
      * Event Passes purchased
@@ -53,30 +53,46 @@ class ESP_Customer {
      *
      * @since 1.0
      * @access public
-     * @param $wp_user
-     * @param $super_passes
-     * @param $attending
+     * @param $wp_user_id
      * @return void
      */
-    public function __construct( $wp_user ) {
-        $this->wp_user      = $wp_user;
-
-        $this->gather_super_passes();
-        $this->gather_attendance_records();
+    public function __construct( $wp_user_id ) {
+        $this->wp_user_id = $wp_user_id;
     }
 
     /**
+     * Gather the attendance records for this customer
      *
-     */
-    public function gather_super_passes() {
-        // Get purchases of 
-    }
-
-    /**
-     *
+     * @since 1.0
+     * @access public
+     * @return void
      */
     public function gather_attendance_records() {
+        $args = array(
+            'post_type' => 'ESP_ATTENDANCE_RECORD',
+            'post_status' => 'draft',
+            'numberposts' => -1,
+            'metaquery' => array(
+                array(
+                    'key' => 'ESP_ATTENDANCE_RECORD_USER_ID',
+                    'value' => $this->wp_user_id,
+                    'compare' => '=',
+                )
+            )
+        );
 
+        $posts = get_posts( $args );
+    }
+
+    /**
+     * Add a Super Pass to this user's collection
+     *
+     * @since 1.0
+     * @param $super_pass
+     * @access public
+     */
+    public function add_super_pass( $super_pass ) {
+        array_push( $this->super_passes, $super_pass );
     }
 
     /**
@@ -89,7 +105,7 @@ class ESP_Customer {
      * @return void
      */
     public function attend_event( $event_id, $super_pass_id ) {
-        $attendance_record = new ESP_Attendance_Record( $super_pass_id, $event_id, $this->wp_user->ID );
+        $attendance_record = new ESP_Attendance_Record( $super_pass_id, $event_id, $this->wp_user_id );
         array_push( $this->attending, $attendance_record );
     }
 

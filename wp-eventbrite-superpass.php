@@ -116,6 +116,15 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         public $events = array();
 
         /**
+         * Collection of ESP Customers
+         *
+         * @access public
+         * @var array
+         * @since 1.0
+         */
+        public $customers = array();
+
+        /**
          * Main Class Instance
          *
          * Insures that only once instance of the main class exists in memory at one time.
@@ -139,8 +148,6 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
                 if ( isset( self::$instance->token ) ) {
                     // Setup client if one time token exists.
                     self::$instance->eb_sdk->setup_client( self::$instance->token );
-                    self::$instance->events = self::$instance->eb_sdk->client->get('/users/me/events');
-                    self::$instance->events = self::$instance->events[ 'events' ];
                 }
                 self::$instance->get_super_passes();
                 self::$instance->compile_settings();
@@ -218,6 +225,8 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
 
             // Classes
             require_once ESP_PLUGIN_DIR . 'includes/class-esp-super-pass.php';
+            require_once ESP_PLUGIN_DIR . 'includes/class-esp-customer.php';
+            require_once ESP_PLUGIN_DIR . 'includes/class-esp-attendance-record.php';
 
             // Misc
             require_once  ESP_PLUGIN_DIR . 'includes/scripts.php';
@@ -341,7 +350,6 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
                 foreach ( $events as $event ) {
                     $super_pass->events[] = $event;
                 }
-                $super_pass->gather_event_data();
                 self::$instance->super_passes[] = $super_pass;
             }
         }
@@ -381,6 +389,46 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         }
 
         /**
+         * Gather event data from Eventbrite, we don't want to be making this call every time, only when it's
+         * needed, doing so every time will lead to performance issues.
+         *
+         * @access public
+         * @since 1.0
+         * @return array
+         */
+        public function get_events() {
+            if ( empty( self::$instance->events ) ) {
+                self::$instance->events = self::$instance->eb_sdk->client->get('/users/me/events');
+                self::$instance->events = self::$instance->events[ 'events' ];
+            }
+
+            return self::$instance->events;
+        }
+
+        /**
+         * If a ESP Customer instance does not exist for this Customer create it and return it. Otherwise return
+         * from existing array.
+         *
+         * @access public
+         * @param $id - ID of WP User
+         * @since 1.0
+         * @return ESP_Customer
+         */
+        public function get_customer_by_id( $id ) {
+            foreach ( self::$instance->customers as $customer ) {
+                if ( $customer->wp_user_id === $id ) {
+                    return $customer;
+                }
+            }
+
+            // Customer not found, create an instance.
+            $wp_user = get_user_by( "ID", $id );
+            $customer = new ESP_Customer( $wp_user->ID );
+            array_push( self::$instance->customers, $customer );
+            return $customer;
+        }
+
+        /**
          * Setup WP Eventbrite Superpass' global settings
          *
          * @access private
@@ -395,11 +443,6 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
             $esp_settings = array(
                 'eventbrite_setup_required' => $setup_required,
             );
-
-            // Conditional settings
-            if( ! $setup_required ) {
-                $esp_settings[ 'eventbrite' ][ 'events' ]   = self::$instance->events;
-            }
         }
     }
 

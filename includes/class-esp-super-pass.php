@@ -106,7 +106,6 @@ class ESP_Super_Pass {
         array_push( $this->events, $event_id );
         // Add as meta
         add_post_meta( $this->id, 'ESP_SUPER_PASS_EVENT', $event_id );
-        $this->gather_event_data();
         return true;
     }
 
@@ -137,9 +136,10 @@ class ESP_Super_Pass {
      */
     public function gather_event_data() {
         $esp = ESP();
+        $events = $esp->get_events();
         foreach( $this->events as &$event ) {
             if ( ! is_array( $event ) || ! is_object( $event )) {
-                foreach( $esp->events as $event_data ) {
+                foreach( $events as $event_data ) {
                     if ( $event_data[ 'id' ] === $event ) {
                         $event = $event_data;
                         break;

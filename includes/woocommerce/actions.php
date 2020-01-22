@@ -69,9 +69,7 @@ function wc_add_menu_item( $items ) {
  * @return void
  */
 function wc_endpoint_content() {
-    ?>
-        <p>Hello World 2!</p>
-    <?php
+    include_once ESP_PLUGIN_DIR . 'includes/woocommerce/templates/event_selection_table.php';
 }
 
 /**
@@ -111,3 +109,38 @@ function unmount_custom_wc_endpoint() {
 }
 register_activation_hook( ESP_PLUGIN_FILE, 'mount_custom_wc_endpoint' );
 register_deactivation_hook( ESP_PLUGIN_FILE, 'unmount_custom_wc_endpoint' );
+
+/**
+ * Gather all completed orders and generate our WC data
+ *
+ * @return void
+ * @since 1.0
+ */
+function setup_esp_customers() {
+    $orders = wc_get_orders( array(
+        'post_status' => 'wc-completed',
+    ) );
+
+    $esp = ESP();
+    foreach( $orders as $order ) {
+        $items = $order->get_items();
+        foreach( $items as $item ) {
+            $data = $item->get_data();
+            // Compare this item's ID to our Superpass WC ID
+            $found = array_search( $data['product_id'], array_column( (array) $esp->super_passes, "wc_id" ) );
+            if ( $found !== false ) {
+                // Order found, let's make an object instance of our ESP Customer
+                $customer = $esp->get_customer_by_id( $order->get_user_id() );
+                $esp->super_passes[$found]->gather_event_data();
+                $customer->add_super_pass( $esp->super_passes[$found] );
+            }
+        }
+    }
+
+    // Now that we have created our customers we can generate attendance
+    foreach ( $esp->customers as $customer ) {
+        $customer->gather_attendance_records();
+    }
+
+}
+add_action( 'woocommerce_after_register_post_type', 'setup_esp_customers' );

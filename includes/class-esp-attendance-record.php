@@ -94,9 +94,9 @@ class ESP_Attendance_Record {
             $this->id = wp_insert_post( $postarr );
 
             // Save meta data
-            add_post_meta( $this->id, 'ESP_ATTENDANCE_RECORD_SP_ID', $super_pass_id );
-            add_post_meta( $this->id, 'ESP_ATTENDANCE_RECORD_USER_ID', $user_id );
-            add_post_meta( $this->id, 'ESP_ATTENDANCE_RECORD_EVENT_ID', $event_id );
+            add_post_meta( $this->id, 'ESP_ATTENDANCE_RECORD_SP_ID', $this->super_pass_id );
+            add_post_meta( $this->id, 'ESP_ATTENDANCE_RECORD_USER_ID', $this->user_id );
+            add_post_meta( $this->id, 'ESP_ATTENDANCE_RECORD_EVENT_ID', $this->event_id );
         } else {
             $this->id = $id;
         }

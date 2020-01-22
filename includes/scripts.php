@@ -52,9 +52,19 @@ add_action( 'admin_enqueue_scripts', 'load_scripts', 100 );
  */
 function load_frontend_scripts() {
     global $wp_query;
+
+    $js_dir = ESP_PLUGIN_URL . 'assets/js/';
+    $css_dir = ESP_PLUGIN_URL . 'assets/css/';
+
     // Only load our custom scripts if we are on our custom endpoint or shortcode page.
     if ( isset( $wp_query->query_vars['superpass'] ) ) {
         wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue/dist/vue.js', []);
+        wp_enqueue_script('axios', 'https://unpkg.com/axios@0.19.0/dist/axios.min.js', [], '0.19.0');
+        wp_register_script( 'esp-frontend-scripts', $js_dir . 'frontend.js', [], ESP_VERSION, false );
+        wp_localize_script( 'esp-frontend-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
+        $customer = apply_filters( 'esp_get_customer_data', '' );
+        wp_localize_script( 'esp-frontend-scripts', 'esp_data', array( 'customer_data' => $customer ) );
+        wp_enqueue_script( 'esp-frontend-scripts' );
     }
 }
 add_action( 'wp_enqueue_scripts', 'load_frontend_scripts' );

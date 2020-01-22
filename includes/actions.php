@@ -33,7 +33,7 @@ add_action( 'admin_init', 'woocommerce_dependency' );
  * For flashing dependency message
  *
  * @since 1.0
- * @return voids
+ * @return void
  */
 function dependency_notice(){
     ?><div class="error"><p>Sorry, WP Eventbrite Superpass requires Woocommerce in order to be used.</p></div><?php
@@ -47,7 +47,10 @@ function dependency_notice(){
  */
 function get_esp_settings() {
     if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        $esp = ESP();
         global $esp_settings;
+        // Add events to the settings
+        $esp_settings['eventbrite']['events'] = $esp->get_events();
         header( "Content-type: application/json" );
         echo json_encode( $esp_settings );
         wp_die();
@@ -65,6 +68,9 @@ function esp_get_super_passes() {
     if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
         $esp = ESP();
         header( "Content-type: application/json" );
+        foreach( $esp->super_passes as $super_pass ) {
+            $super_pass->gather_event_data();
+        }
         echo json_encode( $esp->super_passes );
         wp_die();
     }
@@ -186,3 +192,26 @@ function esp_delete_super_pass() {
     }
 }
 add_action( 'wp_ajax_esp_delete_super_pass', 'esp_delete_super_pass' );
+
+function esp_get_customer_data() {
+    $id = get_current_user_id();
+    $esp = ESP();
+    return $esp->get_customer_by_id( $id );
+}
+add_filter( 'esp_get_customer_data', 'esp_get_customer_data', 1000 );
+
+/*
+function esp_get_customer_data() {
+    $id = get_current_user_id();
+    $esp = ESP();
+    $customer = $esp->get_customer_by_id( $id );
+
+    if ( DEFINED( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( "Content-type: application/json" );
+        echo json_encode( $customer );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_get_customer_data', 'esp_get_customer_data', 1000 );
+add_action( 'wp_ajax_nopriv_esp_get_customer_data', 'esp_get_customer_data', 1000 );
+ */
