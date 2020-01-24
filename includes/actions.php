@@ -40,178 +40,122 @@ function dependency_notice(){
 }
 
 /**
- * Get the settings that the front end will use
+ * Create Page for Eventbrite Checkout
  *
  * @since 1.0
  * @return void
  */
-function get_esp_settings() {
-    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-        $esp = ESP();
-        global $esp_settings;
-        // Add events to the settings
-        $esp_settings['eventbrite']['events'] = $esp->get_events();
-        header( "Content-type: application/json" );
-        echo json_encode( $esp_settings );
-        wp_die();
+function create_eb_page() {
+    $post = get_page_by_title( 'Eventbrite Checkout', OBJECT, 'page' );
+
+    if ( ! $post ) {
+        $postarr = [
+            'post_title' => 'Eventbrite Checkout',
+            'post_type' => 'page',
+            'post_content' => '<!-- wp:shortcode -->[esp_eventbrite_checkout]<!-- /wp:shortcode -->',
+            'post_status' =>'publish',
+        ];
+
+        wp_insert_post( $postarr );
     }
 }
-add_action( 'wp_ajax_get_esp_settings', 'get_esp_settings', 10 );
+register_activation_hook( ESP_PLUGIN_FILE, 'create_eb_page' );
 
 /**
- * Get current super passes
+ * Remove Eventbrite page on plugin deactivation
  *
  * @since 1.0
  * @return void
  */
-function esp_get_super_passes() {
-    if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-        $esp = ESP();
-        header( "Content-type: application/json" );
-        foreach( $esp->super_passes as $super_pass ) {
-            $super_pass->gather_event_data();
-        }
-        echo json_encode( $esp->super_passes );
-        wp_die();
-    }
+function remove_eb_page() {
+    $post = get_page_by_title( 'Eventbrite Checkout', OBJECT, 'page' );
+    wp_delete_post( $post->ID );
 }
-add_action( 'wp_ajax_esp_get_super_passes', 'esp_get_super_passes', 10 );
+register_deactivation_hook( ESP_PLUGIN_FILE, 'remove_eb_page' );
 
 /**
- * Set Eventbrite keys and test if they are working
+ * Get the ESP customer for the current user
  *
  * @since 1.0
- * @return void
+ * @return bool|ESP_Customer
  */
-function setup_esp_eventbrite_keys() {
-    $result = array(
-        "success" => null,
-        "message" => "",
-    );
-
-    // Setup api key && client_secret
-    if ( ! empty( $_POST[ 'api_key' ] ) && ! empty( $_POST[ 'client_secret' ] ) ) {
-        $esp = ESP();
-
-        $esp->set_eventbrite_keys( $_POST );
-
-        // First let's see if these keys are valid
-        $check = $esp->eventbrite_keys_valid();
-        if ( strpos( $check[ 'error_description' ], 'client_id' ) !== false && strpos( $check[ 'error_description' ], 'client_secret' ) !== false ){
-            $result[ 'success' ] = false;
-            $result[ 'message' ] = $check[ 'error_description' ];
-        } else {
-            $link = $esp->eb_sdk->createAuthLink($esp->api_key);
-            $result[ 'link' ] = $link;
-            $result[ 'success' ] = true;
-        }
-    }
-
-    // Check if we're getting an access code
-    if ( ! empty( $_POST[ 'access_code' ] ) ) {
-        $esp = ESP();
-
-        $esp->set_eventbrite_keys( $_POST );
-
-        $check = $esp->eventbrite_keys_valid();
-        if ( strpos( $check[ 'error_description' ], 'code' ) !== false ) {
-            $result[ 'success' ] = false;
-            $result[ 'message' ] = $check[ 'error_description' ];
-        } else {
-            $result[ 'success' ] = true;
-            $esp->set_eventbrite_keys( [ 'token' => $check['access_token'] ] );
-        }
-    }
-
-    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-        header( 'Content-type: application/json' );
-        echo json_encode( $result );
-        wp_die();
-    }
-}
-add_action( 'wp_ajax_setup_esp_eventbrite_keys', 'setup_esp_eventbrite_keys', 10 );
-
-function esp_create_super_pass() {
-    $result = array(
-        "success" => null,
-        "message" => "",
-    );
-
-    if ( ! empty( $_POST[ 'name' ] && ! empty( $_POST[ 'cost' ] ) && ! empty( $_POST[ 'events' ] ) ) ) {
-        $name = sanitize_text_field( $_POST[ 'name' ] );
-        $cost = sanitize_text_field( $_POST[ 'cost' ] );
-
-        $events = isset( $_POST['events'] ) ? (array) $_POST['events'] : array();
-        $events = array_map( 'esc_attr', $events );
-        $super_pass = new ESP_Super_Pass( $cost, $name );
-
-        // We want to make sure each event is existing and is okay to add.
-        foreach( $events as $event ) {
-            $super_pass->add_event( $event );
-        }
-
-        $esp = ESP();
-        $esp->add_super_pass( $super_pass );
-        $result[ 'success' ] = true;
-    } else {
-        $result[ 'success' ] = false;
-        $result[ 'message' ] = "Please make sure to create a name and cost for your Super Pass and select at least one event";
-    }
-
-    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-        header( 'Content-type: application/json' );
-        echo json_encode( $result );
-        wp_die();
-    }
-}
-add_action( 'wp_ajax_esp_create_super_pass', 'esp_create_super_pass' );
-
-function esp_delete_super_pass() {
-    $result = array(
-      'success' => false,
-    );
-
-    if ( isset( $_POST[ 'id' ] ) ) {
-        $esp = ESP();
-        $id = (int) $_POST[ 'id' ];
-        foreach( $esp->super_passes as $super_pass ) {
-            if ( $super_pass->id === $id ) {
-                $super_pass->self_destruct();
-                $result = array(
-                    'success' => true,
-                    'message' => "Super Pass deleted."
-                );
-            }
-        }
-    }
-
-    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-        header( "Content-type: application/json" );
-        echo json_encode( $result );
-        wp_die();
-    }
-}
-add_action( 'wp_ajax_esp_delete_super_pass', 'esp_delete_super_pass' );
-
 function esp_get_customer_data() {
     $id = get_current_user_id();
-    $esp = ESP();
-    return $esp->get_customer_by_id( $id );
+    if ( $id ) {
+        $esp = ESP();
+        return $esp->get_customer_by_id( $id );
+    } else {
+        return false;
+    }
+
 }
 add_filter( 'esp_get_customer_data', 'esp_get_customer_data', 1000 );
 
-/*
-function esp_get_customer_data() {
-    $id = get_current_user_id();
+/**
+ * Check if the customer has any attending events that conflict with the event requested
+ *
+ * @since 1.0
+ * @param $customer
+ * @param $event_id
+ * @return array
+ */
+function esp_can_customer_attend( $customer, $event_id ) {
+    // Search for event.
     $esp = ESP();
-    $customer = $esp->get_customer_by_id( $id );
+    $event = $esp->get_event_by_id( $event_id );
+    if ( $event === false ) {
+        return array( 'result' => false, 'message' => 'Event not found.' );
+    }
+    $event_start_time = strtotime( $event->start );
+    $event_end_time = strtotime( $event->end );
+    $overlap = false;
+    foreach( $customer->attendace_record as $record ) {
+        // Compare the dates of each record and make sure there's no overlap.
+        $cEvent = $esp->get_event_by_id( $record->event_id );
+        $start_time = strtotime( $cEvent->start );
+        $end_time = strtotime( $cEvent->end );
+        if ( $start_time >= $event_start_time && $end_time <= $event_end_time ) {
+            $overlap = true;
+            break;
+        }
+    }
 
-    if ( DEFINED( 'DOING_AJAX' ) && DOING_AJAX ) {
-        header( "Content-type: application/json" );
-        echo json_encode( $customer );
-        wp_die();
+    if( $overlap ) {
+        return array( 'result' => false, 'message' => 'Already attending an overlapping event' );
+    } else {
+        return array( 'result' => true, 'message' => '' );
     }
 }
-add_action( 'wp_ajax_esp_get_customer_data', 'esp_get_customer_data', 1000 );
-add_action( 'wp_ajax_nopriv_esp_get_customer_data', 'esp_get_customer_data', 1000 );
- */
+add_filter( 'esp_can_customer_attend', 'esp_can_customer_attend', 10, 2 );
+
+function eventbrite_checkout_content() {
+    $page_name = get_query_var('pagename');
+    if ( $page_name === 'eventbrite-checkout' ) {
+        $attendance_id =  $_GET['attendance'];
+        $record = new ESP_Attendance_Record(null, null, null, $attendance_id);
+        ?>
+        <div id="eventbrite-widget-container-90798034365"></div>
+
+        <script src="https://www.eventbrite.com/static/widgets/eb_widgets.js"></script>
+
+        <script type="text/javascript">
+            var exampleCallback = function() {
+                console.log('Order complete!');
+            };
+
+            window.EBWidgets.createWidget({
+                // Required
+                widgetType: 'checkout',
+                eventId: '<?php echo $record->event_id; ?>',
+                promoCode: '<?php echo $record->coupon; ?>',
+                iframeContainerId: 'eventbrite-widget-container-90798034365',
+
+                // Optional
+                iframeContainerHeight: 425,  // Widget height in pixels. Defaults to a minimum of 425px if not provided
+                onOrderComplete: exampleCallback  // Method called when an order has successfully completed
+            });
+        </script>
+        <?php
+    }
+}
+add_shortcode( 'esp_eventbrite_checkout', 'eventbrite_checkout_content' );

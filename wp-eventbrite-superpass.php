@@ -125,6 +125,15 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         public $customers = array();
 
         /**
+         * Eventbrite user object
+         *
+         * @access public
+         * @var array
+         * @since 1.0
+         */
+        public $eb_user;
+
+        /**
          * Main Class Instance
          *
          * Insures that only once instance of the main class exists in memory at one time.
@@ -149,6 +158,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
                     // Setup client if one time token exists.
                     self::$instance->eb_sdk->setup_client( self::$instance->token );
                 }
+
                 self::$instance->get_super_passes();
                 self::$instance->compile_settings();
             }
@@ -222,6 +232,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
 
             // Functions
             require_once ESP_PLUGIN_DIR . 'includes/actions.php';
+            require_once ESP_PLUGIN_DIR . 'includes/ajax-actions.php';
 
             // Classes
             require_once ESP_PLUGIN_DIR . 'includes/class-esp-super-pass.php';
@@ -355,6 +366,23 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         }
 
         /**
+         * Get Super Pass by ID
+         *
+         * @access public
+         * @param $id
+         * @return mixed
+         * @since 1.0
+         */
+        public function get_super_pass_by_id( $id ) {
+            $found = array_search( $id, array_column( self::$instance->super_passes, 'id' ) );
+            if ( $found !== false ) {
+                return self::$instance->super_passes[$found];
+            } else {
+                return false;
+            }
+        }
+
+        /**
          * Add super pass and save to DB
          *
          * @access public
@@ -377,6 +405,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         public function eventbrite_keys_valid() {
             if ( isset( self::$instance->token ) ) {
                 $user = self::$instance->eb_sdk->client->get('/users/me');
+                self::$instance->eb_user = $user;
                 return isset( $user['id'] );
             }
             // If none of the keys have been set, obviously it's not valid
@@ -389,6 +418,25 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         }
 
         /**
+         * Get event from the list of events by id
+         *
+         * @access public
+         * @param $id
+         * @return array
+         * @since 1.0
+         */
+        public function get_event_by_id( $id ) {
+            if ( ! count( self::$instance->events ) > 0 ) {
+                return false;
+            }
+            if ( ! isset( self::$instance->events[0]['id'] ) ) {
+                self::$instance->get_events();
+            }
+            $found = array_search( $id, array_column( (array) self::$instance->events, 'id' ) );
+            return self::$instance->events[$found];
+        }
+
+        /**
          * Gather event data from Eventbrite, we don't want to be making this call every time, only when it's
          * needed, doing so every time will lead to performance issues.
          *
@@ -397,7 +445,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          * @return array
          */
         public function get_events() {
-            if ( empty( self::$instance->events ) ) {
+            if ( empty( self::$instance->events ) && isset ( self::$instance->eb_sdk->client ) ) {
                 self::$instance->events = self::$instance->eb_sdk->client->get('/users/me/events');
                 self::$instance->events = self::$instance->events[ 'events' ];
             }

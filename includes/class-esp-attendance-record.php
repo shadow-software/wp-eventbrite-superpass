@@ -57,19 +57,31 @@ class ESP_Attendance_Record {
     public $user_id;
 
     /**
+     * Unique one time discount code usage
+     *
+     * @since 1.0
+     * @access public
+     * @var string
+     */
+    public $coupon;
+
+    /**
      * ESP_Attendance_Record constructor.
      *
      * @param integer $id
      * @param integer $super_pass_id
      * @param integer $event_id
      * @param integer $user_id
+     * @throws Exception
      * @since 1.0
      * @access public
      */
     public function __construct( $super_pass_id = null, $event_id = null, $user_id = null, $id = null ) {
-        $this->super_pass_id    = $super_pass_id;
-        $this->event_id         = $event_id;
-        $this->user_id          = $user_id;
+        if ( $super_pass_id && $event_id && $user_id) {
+            $this->super_pass_id    = $super_pass_id;
+            $this->event_id         = $event_id;
+            $this->user_id          = $user_id;
+        }
 
         $this->save( $id );
     }
@@ -77,29 +89,87 @@ class ESP_Attendance_Record {
     /**
      * Save this to the wordpress database
      *
-     * @since 1.0
-     * @access public
      * @param $id
      * @return void
+     * @throws Exception
+     * @since 1.0
+     * @access public
      */
     public function save( $id ) {
-        if( $id !== null ) {
+        if( $id === null ) {
             // Save to DB
-            $postarr = [
+            $postarr = array(
                 'post_title' => 'Eventbrite Attendance Record',
-                'post_type' => 'ESP_ATTENDANCE_RECORD',
+                'post_type' => 'ESP_RECORD',
                 'post_content' => '',
-            ];
+            );
 
-            $this->id = wp_insert_post( $postarr );
+            $this->id = wp_insert_post( $postarr, true );
 
             // Save meta data
-            add_post_meta( $this->id, 'ESP_ATTENDANCE_RECORD_SP_ID', $this->super_pass_id );
-            add_post_meta( $this->id, 'ESP_ATTENDANCE_RECORD_USER_ID', $this->user_id );
-            add_post_meta( $this->id, 'ESP_ATTENDANCE_RECORD_EVENT_ID', $this->event_id );
+            add_post_meta( $this->id, 'ESP_RECORD_SP_ID', $this->super_pass_id );
+            add_post_meta( $this->id, 'ESP_RECORD_USER_ID', $this->user_id );
+            add_post_meta( $this->id, 'ESP_RECORD_EVENT_ID', $this->event_id );
+            $this->create_coupon();
         } else {
             $this->id = $id;
+            $this->unpack();
         }
+    }
+
+    /**
+     * Get all related meta data from DB
+     *
+     * @since 1.0
+     * @access public
+     * @return void
+     */
+    public function unpack() {
+        $values = get_post_meta( $this->id );
+
+        if ( isset( $values['ESP_RECORD_SP_ID'] ) ) {
+            $this->super_pass_id = $values['ESP_RECORD_SP_ID'][0];
+        }
+
+        if ( isset( $values['ESP_RECORD_USER_ID'] ) ) {
+            $this->user_id = $values['ESP_RECORD_USER_ID'][0];
+        }
+
+        if ( isset( $values['ESP_RECORD_EVENT_ID'] ) ) {
+            $this->event_id = $values['ESP_RECORD_EVENT_ID'][0];
+        }
+
+        if ( isset( $values['ESP_RECORD_COUPON'] ) ) {
+            $this->coupon = $values['ESP_RECORD_COUPON'][0];
+        }
+    }
+
+    /**
+     * Generate secure key for coupon
+     *
+     * @return void
+     * @throws Exception
+     * @since 1.0
+     * @access public
+     */
+    public function create_coupon() {
+        $this->coupon = sha1( random_bytes( 32 ) );
+        add_post_meta( $this->id, 'ESP_RECORD_COUPON', $this->coupon );
+        // Create coupon in Eventbrite's system
+        $esp = ESP();
+        $id = $esp->eb_user["id"];
+        $result = $esp->eb_sdk->client->post(
+            "/organizations/$id/discounts/",
+            array(
+                "discount" => array(
+                    "type" => "coded",
+                    "code" => $this->coupon,
+                    "percent_off" => "100",
+                    "quantity_available" => 1,
+                    "event_id" => $this->event_id,
+                ),
+            )
+        );
     }
 
     /**

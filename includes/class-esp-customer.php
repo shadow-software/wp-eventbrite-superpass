@@ -69,12 +69,12 @@ class ESP_Customer {
      */
     public function gather_attendance_records() {
         $args = array(
-            'post_type' => 'ESP_ATTENDANCE_RECORD',
+            'post_type' => 'ESP_RECORD',
             'post_status' => 'draft',
             'numberposts' => -1,
             'metaquery' => array(
                 array(
-                    'key' => 'ESP_ATTENDANCE_RECORD_USER_ID',
+                    'key' => 'ESP_RECORD_USER_ID',
                     'value' => $this->wp_user_id,
                     'compare' => '=',
                 )
@@ -98,15 +98,19 @@ class ESP_Customer {
     /**
      * Create an attendance record for this user
      *
-     * @since 1.0
-     * @access public
      * @param $event_id
      * @param $super_pass_id
-     * @return void
+     * @return ESP_Attendance_Record
+     * @throws Exception
+     * @since 1.0
+     * @access public
      */
     public function attend_event( $event_id, $super_pass_id ) {
+        // Let's add this user to Eventbrite's system.
+        $esp = ESP();
         $attendance_record = new ESP_Attendance_Record( $super_pass_id, $event_id, $this->wp_user_id );
         array_push( $this->attending, $attendance_record );
+        return $attendance_record;
     }
 
     /**
