@@ -134,6 +134,37 @@ function esp_can_customer_attend( $customer, $event_id, $super_pass_id ) {
 }
 add_filter( 'esp_can_customer_attend', 'esp_can_customer_attend', 10, 3 );
 
+/**
+ * Get a list of Eventbrite events that the current user is attending.
+ *
+ * @since 1.0
+ * @return array
+ */
+function esp_get_extended_attendance_record() {
+    $user_id = get_current_user_id();
+    $esp = ESP();
+    $customer = $esp->get_customer_by_id( $user_id );
+
+    $events = [];
+    foreach( $customer->attending as $record ) {
+        if ( $record->confirmed ) {
+            $event = $esp->get_event_by_id( $record->event_id );
+            $event['super_pass_id'] = (int)$record->super_pass_id;
+            $events[] = $event;
+        }
+    }
+
+    return $events;
+}
+add_filter( 'esp_get_extended_attendance_record', 'esp_get_extended_attendance_record', 1000 );
+
+/**
+ * HTML content and JS script for Eventbrite Checkout. (Taken from Eventbrite)
+ *
+ * @since 1.0
+ * @throws Exception
+ * @return void
+ */
 function eventbrite_checkout_content() {
     $page_name = get_query_var('pagename');
     if ( $page_name === 'eventbrite-checkout' ) {

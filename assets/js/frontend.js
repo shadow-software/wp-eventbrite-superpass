@@ -1,6 +1,13 @@
 "use strict";
 
 document.addEventListener('DOMContentLoaded', (e) => {
+    var calendarEl = document.getElementById('full-calendar');
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        plugins: [ 'timeGrid' ],
+        defaultView: 'timeGridDay',
+        eventClick: this.handleEventClick,
+    });
 
     Vue.config.devtools = true;
     var ajaxurl = ajax_object.ajax_url;
@@ -23,7 +30,6 @@ document.addEventListener('DOMContentLoaded', (e) => {
             updating : false,
             customerData : esp_data.customer_data,
             superPass : null,
-            calendar : null,
             modal : {
                 title : "",
                 content: "",
@@ -55,17 +61,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
 
                     var startDate = events[0].start;
 
-                    var calendarEl = document.getElementById('full-calendar');
-
-                    this.calendar = new FullCalendar.Calendar(calendarEl, {
-                        plugins: [ 'timeGrid' ],
-                        defaultView: 'timeGridDay',
-                        defaultDate: startDate,
-                        events: events,
-                        eventClick: this.handleEventClick,
-                    });
-
-                    this.calendar.render();
+                    calendar.render();
                 }
             },
             handleEventClick: function(info) {
@@ -105,6 +101,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
             '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin: auto; background: rgba(0, 0, 0, 0) none repeat scroll 0% 0%; display: block; shape-rendering: auto;" width="20px" height="20px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">\n' +
             '<circle cx="50" cy="50" fill="none" stroke="#ffffff" stroke-width="10" r="35" stroke-dasharray="164.93361431346415 56.97787143782138">\n' +
             '  <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" values="0 50 50;360 50 50" keyTimes="0;1"></animateTransform>\n' +
-            '</circle>'
+            '</circle>\n' +
+            '</svg>'
     });
 });

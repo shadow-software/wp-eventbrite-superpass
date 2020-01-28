@@ -22,6 +22,7 @@ function load_scripts( $hook ) {
     $js_dir = ESP_PLUGIN_URL . 'assets/js/';
     $css_dir = ESP_PLUGIN_URL . 'assets/css/';
 
+    // TODO: Switch over to ES6 friendly environment and use webpack
     // Get Vue, we're going to use the development version for now
     wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue/dist/vue.js', []);
 
@@ -57,24 +58,22 @@ function load_frontend_scripts() {
     $css_dir = ESP_PLUGIN_URL . 'assets/css/';
 
     // Only load our custom scripts if we are on our custom endpoint or shortcode page.
+    /* TODO: Use webpack for all dependencies, right now there are some libraries used outside of our Vue Components,
+        so our dependencies need to be split up this way for now.
+    */
+    if( isset( $wp_query->query_vars['superpass'] ) ) {
+        wp_register_script( 'esp-frontend-scripts', $js_dir . 'bundle.js', ['axios'], ESP_VERSION, false );
+    }
+
     if ( isset( $wp_query->query_vars['superpass'] ) || $wp_query->query_vars['pagename'] === 'eventbrite-checkout' ) {
-        wp_enqueue_script( 'vue', 'https://cdn.jsdelivr.net/npm/vue/dist/vue.js', [] );
         wp_enqueue_script( 'axios', 'https://unpkg.com/axios@0.19.0/dist/axios.min.js', [], '0.19.0' );
         wp_enqueue_style( 'extra', $css_dir . 'extra.css' );
-        wp_enqueue_script( 'moment', $js_dir . 'fullcalendar/packages/moment/main.min.js' );
-        wp_enqueue_script( 'micromodal', "https://unpkg.com/micromodal@0.4.2/dist/micromodal.js" );
-        wp_enqueue_script( 'fullcalendar-core', $js_dir . 'fullcalendar/packages/core/main.min.js', ['moment'], '4.3.1' );
-        wp_enqueue_style( 'fullcalendar-core', $js_dir . 'fullcalendar/packages/core/main.min.css', [], '4.3.1' );
-        wp_enqueue_script( 'fullcalendar-daygrid', $js_dir . 'fullcalendar/packages/daygrid/main.min.js', ['fullcalendar-core'], '4.3.1' );
-        wp_enqueue_style( 'fullcalendar-daygrid', $js_dir . 'fullcalendar/packages/daygrid/main.min.css', ['fullcalendar-core'], '4.3.1' );
-        wp_enqueue_script( 'fullcalendar-timegrid', $js_dir . 'fullcalendar/packages/timegrid/main.min.js', ['fullcalendar-daygrid'], '4.3.1' );
-        wp_enqueue_style( 'fullcalendar-timegrid', $js_dir . 'fullcalendar/packages/timegrid/main.min.css', ['fullcalendar-daygrid'], '4.3.1' );
         wp_enqueue_script( 'esp-misc-scripts', $js_dir . 'helpers.js', [], ESP_VERSION, false );
-        wp_register_script( 'esp-frontend-scripts', $js_dir . 'frontend.js', ['fullcalendar-timegrid', 'axios', 'vue', 'esp-misc-scripts'], ESP_VERSION, false );
         wp_localize_script( 'esp-frontend-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
         $customer = apply_filters( 'esp_get_customer_data', '' );
+        $attending_events = apply_filters( 'esp_get_extended_attendance_record', '' );
         $page = get_page_by_title( 'Eventbrite Checkout', OBJECT );
-        wp_localize_script( 'esp-frontend-scripts', 'esp_data', array( 'customer_data' => $customer, 'eb_checkout_url' =>  $page->guid ) );
+        wp_localize_script( 'esp-frontend-scripts', 'esp_data', array( 'customer_data' => $customer, 'eb_checkout_url' =>  $page->guid, 'attending_events' => $attending_events ) );
         wp_enqueue_script( 'esp-frontend-scripts' );
     }
 }

@@ -155,7 +155,7 @@ class ESP_Attendance_Record {
         }
 
         if ( isset( $values['ESP_RECORD_CONFIRMED'] ) ) {
-            $this->coupon = $values['ESP_RECORD_CONFIRMED'][0];
+            $this->confirmed = $values['ESP_RECORD_CONFIRMED'][0];
         }
 
     }
