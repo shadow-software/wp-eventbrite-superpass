@@ -94,12 +94,13 @@ add_filter( 'esp_get_customer_data', 'esp_get_customer_data', 1000 );
 /**
  * Check if the customer has any attending events that conflict with the event requested
  *
- * @since 1.0
- * @param $customer
- * @param $event_id
+ * @param $customer - ESP_Customer Object
+ * @param $event_id - ID of Eventbrite event.
+ * @param $super_pass_id - Superpass being used to attend this event
  * @return array
+ * @since 1.0
  */
-function esp_can_customer_attend( $customer, $event_id ) {
+function esp_can_customer_attend( $customer, $event_id, $super_pass_id ) {
     // Search for event.
     $esp = ESP();
     $event = $esp->get_event_by_id( $event_id );
@@ -109,14 +110,19 @@ function esp_can_customer_attend( $customer, $event_id ) {
     $event_start_time = strtotime( $event->start );
     $event_end_time = strtotime( $event->end );
     $overlap = false;
-    foreach( $customer->attendace_record as $record ) {
+    foreach( $customer->attending as $record ) {
         // Compare the dates of each record and make sure there's no overlap.
         $cEvent = $esp->get_event_by_id( $record->event_id );
         $start_time = strtotime( $cEvent->start );
         $end_time = strtotime( $cEvent->end );
-        if ( $start_time >= $event_start_time && $end_time <= $event_end_time ) {
+
+        if ( $start_time >= $event_start_time && $end_time <= $event_end_time && $record->event_id !== $event_id || $super_pass_id !== $record->super_pass_id ) {
             $overlap = true;
-            break;
+        }
+
+        if ( $event_id === $record->event_id && $super_pass_id === $record->super_pass_id && $record->confirmed === true ) {
+            // The user already has an attendance record for this event using this superpass and has purchased the eventbrite ticket.
+            return array( 'result' => false, 'message' => 'Already attending this event.' );
         }
     }
 
@@ -126,36 +132,56 @@ function esp_can_customer_attend( $customer, $event_id ) {
         return array( 'result' => true, 'message' => '' );
     }
 }
-add_filter( 'esp_can_customer_attend', 'esp_can_customer_attend', 10, 2 );
+add_filter( 'esp_can_customer_attend', 'esp_can_customer_attend', 10, 3 );
 
 function eventbrite_checkout_content() {
     $page_name = get_query_var('pagename');
     if ( $page_name === 'eventbrite-checkout' ) {
         $attendance_id =  $_GET['attendance'];
         $record = new ESP_Attendance_Record(null, null, null, $attendance_id);
-        ?>
-        <div id="eventbrite-widget-container-90798034365"></div>
+        // Make sure that the owner of the attendance record belongs to the current logged in user.
+        $user = wp_get_current_user();
+        if( $user->ID === (int)$record->user_id ) {
+            ?>
+            <div id="eventbrite-widget-container-<?php echo $record->event_id; ?>"></div>
 
-        <script src="https://www.eventbrite.com/static/widgets/eb_widgets.js"></script>
+            <script src="https://www.eventbrite.com/static/widgets/eb_widgets.js"></script>
 
-        <script type="text/javascript">
-            var exampleCallback = function() {
-                console.log('Order complete!');
-            };
+            <script type="text/javascript">
+                var markComplete = function() {
+                    var ajaxurl = ajax_object.ajax_url;
+                    var attendance_id = getAllUrlParams().attendance;
+                    var data = new FormData();
+                    data.append('action', 'esp_confirm_eb_order');
+                    data.append('attendance_id', attendance_id);
 
-            window.EBWidgets.createWidget({
-                // Required
-                widgetType: 'checkout',
-                eventId: '<?php echo $record->event_id; ?>',
-                promoCode: '<?php echo $record->coupon; ?>',
-                iframeContainerId: 'eventbrite-widget-container-90798034365',
+                    axios.post(ajaxurl, data)
+                    .then(function(response) {
+                        window.location.href = response.data.redirect;
+                    })
+                };
 
-                // Optional
-                iframeContainerHeight: 425,  // Widget height in pixels. Defaults to a minimum of 425px if not provided
-                onOrderComplete: exampleCallback  // Method called when an order has successfully completed
-            });
-        </script>
-        <?php
+                window.EBWidgets.createWidget({
+                    // Required
+                    widgetType: 'checkout',
+                    eventId: '<?php echo $record->event_id; ?>',
+                    promoCode: '<?php echo $record->coupon; ?>',
+                    iframeContainerId: 'eventbrite-widget-container-<?php echo $record->event_id; ?>',
+
+                    // Optional
+                    iframeContainerHeight: 425,  // Widget height in pixels. Defaults to a minimum of 425px if not provided
+                    onOrderComplete: markComplete  // Method called when an order has successfully completed
+                });
+            </script>
+            <?php
+        } else {
+            ?>
+            <div>
+                We're sorry, this URL is invalid.
+            </div>
+            <?php
+        }
+
     }
 }
 add_shortcode( 'esp_eventbrite_checkout', 'eventbrite_checkout_content' );

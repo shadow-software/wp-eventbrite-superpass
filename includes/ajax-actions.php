@@ -180,7 +180,7 @@ function esp_customer_attend_event() {
             $super_pass_id = $_POST['super_pass_id'];
             $customer = $esp->get_customer_by_id( $id );
             // Check for attendance overlaps
-            $check = apply_filters( 'esp_can_customer_attend', $customer, $event_id );
+            $check = apply_filters( 'esp_can_customer_attend', $customer, $event_id, $super_pass_id );
             $result['success'] = $check['result'];
             $result['message'] = $check['message'];
 
@@ -199,3 +199,28 @@ function esp_customer_attend_event() {
     }
 }
 add_action( 'wp_ajax_esp_customer_attend_event', 'esp_customer_attend_event' );
+
+function esp_confirm_eb_order() {
+    $result = array(
+        'success' => false,
+        'message' => ''
+    );
+
+    if( isset( $_POST['attendance_id'] )) {
+        $attendance_id = $_POST['attendance_id'];
+        $attendance_record = new ESP_Attendance_Record( null, null, null,$attendance_id );
+        if ( isset( $attendance_record->event_id ) ) {
+            $attendance_record->set_confirmed();
+            $result['success'] = true;
+            $result['message'] = "Ticket purchase successful";
+            $result['redirect'] = get_site_url( null, '/my-account/superpass' );
+        }
+    }
+
+    if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( 'Content-type: application/json' );
+        echo json_encode( $result );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_confirm_eb_order', 'esp_confirm_eb_order' );

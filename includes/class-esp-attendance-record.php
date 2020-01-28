@@ -66,6 +66,15 @@ class ESP_Attendance_Record {
     public $coupon;
 
     /**
+     * Has this ticket purchase been confirmed? (via Eventbrite's checkout order complete callback)
+     *
+     * @since 1.0
+     * @access public
+     * @var boolean
+     */
+    public $confirmed;
+
+    /**
      * ESP_Attendance_Record constructor.
      *
      * @param integer $id
@@ -81,6 +90,8 @@ class ESP_Attendance_Record {
             $this->super_pass_id    = $super_pass_id;
             $this->event_id         = $event_id;
             $this->user_id          = $user_id;
+            // If the record is being constructed this way than it means that it has not reached the purchasing stage.
+            $this->confirmed        = false;
         }
 
         $this->save( $id );
@@ -142,6 +153,11 @@ class ESP_Attendance_Record {
         if ( isset( $values['ESP_RECORD_COUPON'] ) ) {
             $this->coupon = $values['ESP_RECORD_COUPON'][0];
         }
+
+        if ( isset( $values['ESP_RECORD_CONFIRMED'] ) ) {
+            $this->coupon = $values['ESP_RECORD_CONFIRMED'][0];
+        }
+
     }
 
     /**
@@ -170,6 +186,19 @@ class ESP_Attendance_Record {
                 ),
             )
         );
+    }
+
+    /**
+     * Ticket purchase has been confirmed
+     *
+     * @since 1.0
+     * @param $confirmed
+     * @access public
+     * @return void
+     */
+    public function set_confirmed( $confirmed = true ) {
+        $this->confirmed = $confirmed;
+        add_post_meta( $this->id, 'ESP_RECORD_CONFIRMED', $this->confirmed );
     }
 
     /**

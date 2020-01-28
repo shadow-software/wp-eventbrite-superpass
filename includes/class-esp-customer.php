@@ -26,7 +26,7 @@ class ESP_Customer {
      *
      * @since 1.0
      * @access public
-     * @var integer|WP_User::ID
+     * @var integer - WP_User::ID
      */
     public $wp_user_id;
 
@@ -82,6 +82,11 @@ class ESP_Customer {
         );
 
         $posts = get_posts( $args );
+
+        foreach( $posts as $post ) {
+            $record = new ESP_Attendance_Record( null, null, null, $post->ID );
+            $this->attending[] = $record;
+        }
     }
 
     /**
@@ -108,8 +113,17 @@ class ESP_Customer {
     public function attend_event( $event_id, $super_pass_id ) {
         // Let's add this user to Eventbrite's system.
         $esp = ESP();
-        $attendance_record = new ESP_Attendance_Record( $super_pass_id, $event_id, $this->wp_user_id );
-        array_push( $this->attending, $attendance_record );
+        // First let's check if we are already attending this event.
+        $attendance_record = null;
+        foreach ( $this->attending as $record ) {
+            if ( $record->event_id === $event_id && $record->super_pass_id === $super_pass_id ) {
+                $attendance_record = $record;
+            }
+        }
+        if ( $attendance_record === null ) {
+            $attendance_record = new ESP_Attendance_Record( $super_pass_id, $event_id, $this->wp_user_id );
+            array_push( $this->attending, $attendance_record );
+        }
         return $attendance_record;
     }
 

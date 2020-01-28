@@ -79,19 +79,32 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 MicroModal.show('esp-modal');
             },
             attendEvent: function() {
-                var data = new FormData();
-                data.append("action", "esp_customer_attend_event");
-                data.append('event_id', this.currentEvent.id);
-                data.append('super_pass_id', this.superPass.id);
+                if (!this.updating) {
+                    this.updating = true;
+                    var data = new FormData();
+                    data.append("action", "esp_customer_attend_event");
+                    data.append('event_id', this.currentEvent.id);
+                    data.append('super_pass_id', this.superPass.id);
 
-                axios
-                    .post(ajaxurl, data)
-                    .then(response => {
-                        if (response.data.success === true) {
-                            window.location.href = esp_data.eb_checkout_url + '?event_id=' + response.data.result.event_id + '&attendance=' + response.data.result.id;
-                        }
-                    })
+                    axios
+                        .post(ajaxurl, data)
+                        .then(response => {
+                            if (response.data.success === true) {
+                                window.location.href = esp_data.eb_checkout_url + '?event_id=' + response.data.result.event_id + '&attendance=' + response.data.result.id;
+                            } else {
+                                this.updating = false;
+                            }
+                        })
+                }
             }
         }
+    });
+
+    Vue.component('spinner', {
+        template:
+            '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin: auto; background: rgba(0, 0, 0, 0) none repeat scroll 0% 0%; display: block; shape-rendering: auto;" width="20px" height="20px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">\n' +
+            '<circle cx="50" cy="50" fill="none" stroke="#ffffff" stroke-width="10" r="35" stroke-dasharray="164.93361431346415 56.97787143782138">\n' +
+            '  <animateTransform attributeName="transform" type="rotate" repeatCount="indefinite" dur="1s" values="0 50 50;360 50 50" keyTimes="0;1"></animateTransform>\n' +
+            '</circle>'
     });
 });

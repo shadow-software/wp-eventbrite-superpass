@@ -197,19 +197,4 @@ document.addEventListener('DOMContentLoaded', (e) => {
             }
         }
     });
-
-    Vue.component('spinner', {
-        template:
-            '<div class="preloader-wrapper small active">\n' +
-            '    <div class="spinner-layer spinner-green-only">\n' +
-            '      <div class="circle-clipper left">\n' +
-            '        <div class="circle"></div>\n' +
-            '      </div><div class="gap-patch">\n' +
-            '        <div class="circle"></div>\n' +
-            '      </div><div class="circle-clipper right">\n' +
-            '        <div class="circle"></div>\n' +
-            '      </div>\n' +
-            '    </div>\n' +
-            '  </div>',
-    });
 });

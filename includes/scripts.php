@@ -57,7 +57,7 @@ function load_frontend_scripts() {
     $css_dir = ESP_PLUGIN_URL . 'assets/css/';
 
     // Only load our custom scripts if we are on our custom endpoint or shortcode page.
-    if ( isset( $wp_query->query_vars['superpass'] ) ) {
+    if ( isset( $wp_query->query_vars['superpass'] ) || $wp_query->query_vars['pagename'] === 'eventbrite-checkout' ) {
         wp_enqueue_script( 'vue', 'https://cdn.jsdelivr.net/npm/vue/dist/vue.js', [] );
         wp_enqueue_script( 'axios', 'https://unpkg.com/axios@0.19.0/dist/axios.min.js', [], '0.19.0' );
         wp_enqueue_style( 'extra', $css_dir . 'extra.css' );
@@ -69,7 +69,8 @@ function load_frontend_scripts() {
         wp_enqueue_style( 'fullcalendar-daygrid', $js_dir . 'fullcalendar/packages/daygrid/main.min.css', ['fullcalendar-core'], '4.3.1' );
         wp_enqueue_script( 'fullcalendar-timegrid', $js_dir . 'fullcalendar/packages/timegrid/main.min.js', ['fullcalendar-daygrid'], '4.3.1' );
         wp_enqueue_style( 'fullcalendar-timegrid', $js_dir . 'fullcalendar/packages/timegrid/main.min.css', ['fullcalendar-daygrid'], '4.3.1' );
-        wp_register_script( 'esp-frontend-scripts', $js_dir . 'frontend.js', ['fullcalendar-timegrid', 'axios', 'vue'], ESP_VERSION, false );
+        wp_enqueue_script( 'esp-misc-scripts', $js_dir . 'helpers.js', [], ESP_VERSION, false );
+        wp_register_script( 'esp-frontend-scripts', $js_dir . 'frontend.js', ['fullcalendar-timegrid', 'axios', 'vue', 'esp-misc-scripts'], ESP_VERSION, false );
         wp_localize_script( 'esp-frontend-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
         $customer = apply_filters( 'esp_get_customer_data', '' );
         $page = get_page_by_title( 'Eventbrite Checkout', OBJECT );

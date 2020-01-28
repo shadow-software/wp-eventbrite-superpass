@@ -25,7 +25,10 @@
                     </div>
                 </main>
                 <footer class="modal__footer">
-                    <button v-on:click="attendEvent" class="modal__btn modal__btn-primary">Attend This Event</button>
+                    <button v-on:click="attendEvent" class="modal__btn modal__btn-primary">
+                        <span v-if="!updating">Attend This Event</span>
+                        <spinner v-if="updating"></spinner>
+                    </button>
                     <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
                 </footer>
             </div>
