@@ -115,16 +115,16 @@ function main() {
                                     <li v-for="event in superpass.events"><a :href="event.url" target="_blank">{{ event.name.text }}</a></li>
                                 </ul>
                                 <div style="position: absolute;top: calc(30%);right: 20px;">
-                                    <button v-on:click="deleteSuperPass" :value="superpass.id" class="btn btn-danger text-white">DELETE</button>
+                                    <button v-on:click="editSuperPass" :value="superpass.id" class="btn btn-primary text-white">EDIT</button>
                                 </div>
                             </td>
                         </tr>
                         </tbody>
                     </table>
-                    <div v-if="! creatingPass"  class="row">
+                    <div v-if="! creatingPass && ! editingPass"  class="row">
                        <div v-on:click="creatingPass = true" class="btn btn-primary m-auto">Create a new Super Pass</div>
                     </div>
-                    <div v-if="creatingPass" class="card w-100 bg-light" style="max-width: unset;">
+                    <div v-if="creatingPass || editingPass" class="card w-100 bg-light" style="max-width: unset;">
                         <div class="row">
                             <div class="col">
                                 <div class="form-group">
@@ -153,7 +153,19 @@ function main() {
                         </div>
                         <div class="row mt-3">
                             <div class="m-auto">
-                                <div v-on:click="createSuperPass" class="btn btn-primary m-auto" :class="{disabled : !superPassValid()}">
+                                <div v-if="editingPass" v-on:click="updateSuperPass" class="btn btn-success m-auto" :class="{disabled : !superPassValid()}">
+                                    <span v-if="!updating">
+                                        Save
+                                    </span>
+                                    <span v-if="updating">
+                                        <div class="text-center">
+                                            <div class="spinner-border text-light" role="status">
+                                                <span class="sr-only">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </span>
+                                </div>
+                                <div v-if="creatingPass" v-on:click="createSuperPass" class="btn btn-primary m-auto" :class="{disabled : !superPassValid()}">
                                     <span v-if="!updating">
                                         Create
                                     </span>
@@ -165,7 +177,8 @@ function main() {
                                         </div>
                                     </span>
                                 </div>
-                                <div v-on:click="creatingPass = false" class="btn btn-warning m-auto" v-if="!updating">Cancel</div>
+                                <div v-on:click="cancelEdit" class="btn btn-warning m-auto" v-if="!updating && editingPass">Cancel</div>
+                                <div v-on:click="creatingPass = false" class="btn btn-warning m-auto" v-if="!updating && creatingPass">Cancel</div>
                             </div>
                         </div>
                     </div>

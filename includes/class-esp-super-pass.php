@@ -118,10 +118,10 @@ class ESP_Super_Pass {
      * @return boolean
      */
     public function remove_event( $event_id ) {
-        $key = array_search( $event_id, $this->events );
-        // Remove from meta
-        delete_post_meta( $this->id, "ESP_SUPER_PASS_EVENT", $event_id );
+        $key = array_search( $event_id, array_column( $this->events, 'id' ) );
         if ( $key ) {
+            // Remove from meta
+            delete_post_meta( $this->id, "ESP_SUPER_PASS_EVENT", $event_id );
             array_splice( $this->events, $key, 1 );
         }
         return $key !== false;
@@ -202,6 +202,25 @@ class ESP_Super_Pass {
         update_post_meta( $post_id, '_manage_stock', "no" );
         update_post_meta( $post_id, '_backorders', "no" );
         update_post_meta( $post_id, '_stock', "" );
+    }
+
+    /**
+     * Update main post meta data (excluding events)
+     *
+     * @since 1.0
+     * @access public
+     * @return boolean
+     */
+    public function update() {
+        $postarr = [
+            'ID' => (int)$this->id,
+            'post_title' => $this->name,
+            'post_type' => 'ESP_SUPER_PASS',
+            'post_content' => '',
+        ];
+        $result = wp_update_post( $postarr, true );
+        update_post_meta( $this->id, 'ESP_SUPER_PASS_COST', $this->cost );
+        return $result !== 0;
     }
 
     /**
