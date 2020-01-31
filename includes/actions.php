@@ -107,20 +107,21 @@ function esp_can_customer_attend( $customer, $event_id, $super_pass_id ) {
     if ( $event === false ) {
         return array( 'result' => false, 'message' => 'Event not found.' );
     }
-    $event_start_time = strtotime( $event->start );
-    $event_end_time = strtotime( $event->end );
+    $event_start_time = strtotime( $event['start']['local'] );
+    $event_end_time = strtotime( $event['end']['local'] );
     $overlap = false;
+
     foreach( $customer->attending as $record ) {
         // Compare the dates of each record and make sure there's no overlap.
         $cEvent = $esp->get_event_by_id( $record->event_id );
-        $start_time = strtotime( $cEvent->start );
-        $end_time = strtotime( $cEvent->end );
+        $start_time = strtotime( $cEvent['start']['local'] );
+        $end_time = strtotime( $cEvent['end']['local'] );
 
-        if ( $start_time >= $event_start_time && $end_time <= $event_end_time && $record->event_id !== $event_id || $super_pass_id !== $record->super_pass_id ) {
+        if ( $event_start_time < $end_time && $start_time < $event_end_time && ! (!$record->confirmed && (int)$record->event_id === (int)$event_id ) && (int) $super_pass_id === (int) $record->super_pass_id ) {
             $overlap = true;
         }
 
-        if ( $event_id === $record->event_id && $super_pass_id === $record->super_pass_id && $record->confirmed === true ) {
+        if ( (int)$event_id === (int)$record->event_id && (int)$super_pass_id === (int)$record->super_pass_id && $record->confirmed ) {
             // The user already has an attendance record for this event using this superpass and has purchased the eventbrite ticket.
             return array( 'result' => false, 'message' => 'Already attending this event.' );
         }
@@ -175,11 +176,13 @@ function eventbrite_checkout_content() {
         if( $user->ID === (int)$record->user_id ) {
             ?>
             <div id="eventbrite-widget-container-<?php echo $record->event_id; ?>"></div>
-
+            <div id="esp-overlay" class="esp-overlay"></div>
             <script src="https://www.eventbrite.com/static/widgets/eb_widgets.js"></script>
 
             <script type="text/javascript">
                 var markComplete = function() {
+                    var overlay = document.getElementById("esp-overlay");
+                    overlay.style.display = "block";
                     var ajaxurl = ajax_object.ajax_url;
                     var attendance_id = getAllUrlParams().attendance;
                     var data = new FormData();
@@ -188,6 +191,7 @@ function eventbrite_checkout_content() {
 
                     axios.post(ajaxurl, data)
                     .then(function(response) {
+                        overlay.style.display = "none";
                         window.location.href = response.data.redirect;
                     })
                 };
