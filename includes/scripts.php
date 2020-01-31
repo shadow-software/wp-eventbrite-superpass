@@ -63,18 +63,19 @@ function load_frontend_scripts() {
     */
     if( isset( $wp_query->query_vars['superpass'] ) ) {
         wp_register_script( 'esp-frontend-scripts', $js_dir . 'bundle.js', ['axios'], ESP_VERSION, false );
+        wp_enqueue_script( 'esp-frontend-scripts' );
     }
 
     if ( isset( $wp_query->query_vars['superpass'] ) || $wp_query->query_vars['pagename'] === 'eventbrite-checkout' ) {
         wp_enqueue_script( 'axios', 'https://unpkg.com/axios@0.19.0/dist/axios.min.js', [], '0.19.0' );
         wp_enqueue_style( 'extra', $css_dir . 'extra.css' );
-        wp_enqueue_script( 'esp-misc-scripts', $js_dir . 'helpers.js', [], ESP_VERSION, false );
-        wp_localize_script( 'esp-frontend-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
+        wp_register_script( 'esp-misc-scripts', $js_dir . 'helpers.js', [], ESP_VERSION, false );
+        wp_localize_script( 'esp-misc-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
         $customer = apply_filters( 'esp_get_customer_data', '' );
         $attending_events = apply_filters( 'esp_get_extended_attendance_record', '' );
         $page = get_page_by_title( 'Eventbrite Checkout', OBJECT );
-        wp_localize_script( 'esp-frontend-scripts', 'esp_data', array( 'customer_data' => $customer, 'eb_checkout_url' =>  $page->guid, 'attending_events' => $attending_events ) );
-        wp_enqueue_script( 'esp-frontend-scripts' );
+        wp_localize_script( 'esp-misc-scripts', 'esp_data', array( 'customer_data' => $customer, 'eb_checkout_url' =>  $page->guid, 'attending_events' => $attending_events ) );
+        wp_enqueue_script( 'esp-misc-scripts' );
     }
 }
 add_action( 'wp_enqueue_scripts', 'load_frontend_scripts' );
