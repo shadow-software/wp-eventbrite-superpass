@@ -30765,25 +30765,27 @@ __webpack_require__.r(__webpack_exports__);
             debugMode: true // [9]
         });
         this.superPass = this.customerData.super_passes[0];
-
-        var events = this.superPass.events.map( function(event) {
-            return {
-                "id": event.id,
-                "title": event.name.text,
-                "allDay": false,
-                "start": moment__WEBPACK_IMPORTED_MODULE_3___default()(event.start.local).format("YYYY-MM-DD HH:mm"),
-                "end": moment__WEBPACK_IMPORTED_MODULE_3___default()(event.end.local).format("YYYY-MM-DD HH:mm"),
-                "description": event.description.html,
-                "image": event.logo ? event.logo.original.url : false,
-                "url": event.url,
-            }
-        });
-
-        this.startDate = events[0].start;
-
-        this.events = events;
+        this.updateEvents();
     },
     methods: {
+        updateEvents: function(){
+            var events = this.superPass.events.map( function(event) {
+                return {
+                    "id": event.id,
+                    "title": event.name.text,
+                    "allDay": false,
+                    "start": moment__WEBPACK_IMPORTED_MODULE_3___default()(event.start.local).format("YYYY-MM-DD HH:mm"),
+                    "end": moment__WEBPACK_IMPORTED_MODULE_3___default()(event.end.local).format("YYYY-MM-DD HH:mm"),
+                    "description": event.description.html,
+                    "image": event.logo ? event.logo.original.url : false,
+                    "url": event.url,
+                }
+            });
+
+            this.startDate = events[0].start;
+
+            this.events = events;
+        },
         moment: function() {
           return moment__WEBPACK_IMPORTED_MODULE_3___default()();
         },
@@ -30816,6 +30818,14 @@ __webpack_require__.r(__webpack_exports__);
                         }
                     })
             }
+        },
+        changeSuperPass: function(e) {
+            let id = e.target.value;
+            let superPass = this.customerData.super_passes.find(function(superPass) {
+                return superPass.id == id;
+            })
+            this.superPass = superPass;
+            this.updateEvents();
         }
     }
 });
@@ -30873,9 +30883,14 @@ var render = function() {
         _vm._v(" "),
         _c(
           "select",
-          { attrs: { id: "superPassSelection" } },
+          {
+            attrs: { id: "superPassSelection" },
+            on: { change: _vm.changeSuperPass }
+          },
           _vm._l(_vm.customerData.super_passes, function(superPass) {
-            return _c("option", [_vm._v(_vm._s(superPass.name))])
+            return _c("option", { domProps: { value: superPass.id } }, [
+              _vm._v(_vm._s(superPass.name))
+            ])
           }),
           0
         )
@@ -40087,15 +40102,14 @@ module.exports = function(module) {
 /*!**************************!*\
   !*** ./src/FrontEnd.vue ***!
   \**************************/
-/*! no static exports found */
+/*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _FrontEnd_vue_vue_type_template_id_0888d9eb___WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./FrontEnd.vue?vue&type=template&id=0888d9eb& */ "./src/FrontEnd.vue?vue&type=template&id=0888d9eb&");
 /* harmony import */ var _FrontEnd_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./FrontEnd.vue?vue&type=script&lang=js& */ "./src/FrontEnd.vue?vue&type=script&lang=js&");
-/* harmony reexport (unknown) */ for(var __WEBPACK_IMPORT_KEY__ in _FrontEnd_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__) if(__WEBPACK_IMPORT_KEY__ !== 'default') (function(key) { __webpack_require__.d(__webpack_exports__, key, function() { return _FrontEnd_vue_vue_type_script_lang_js___WEBPACK_IMPORTED_MODULE_1__[key]; }) }(__WEBPACK_IMPORT_KEY__));
-/* harmony import */ var _FrontEnd_vue_vue_type_style_index_0_lang_scss___WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./FrontEnd.vue?vue&type=style&index=0&lang=scss& */ "./src/FrontEnd.vue?vue&type=style&index=0&lang=scss&");
+/* empty/unused harmony star reexport *//* harmony import */ var _FrontEnd_vue_vue_type_style_index_0_lang_scss___WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./FrontEnd.vue?vue&type=style&index=0&lang=scss& */ "./src/FrontEnd.vue?vue&type=style&index=0&lang=scss&");
 /* harmony import */ var _node_modules_vue_loader_lib_runtime_componentNormalizer_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../node_modules/vue-loader/lib/runtime/componentNormalizer.js */ "./node_modules/vue-loader/lib/runtime/componentNormalizer.js");
 
 
@@ -40127,7 +40141,7 @@ component.options.__file = "src/FrontEnd.vue"
 /*!***************************************************!*\
   !*** ./src/FrontEnd.vue?vue&type=script&lang=js& ***!
   \***************************************************/
-/*! no static exports found */
+/*! exports provided: default */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";

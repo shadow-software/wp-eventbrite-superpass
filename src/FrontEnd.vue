@@ -2,8 +2,8 @@
     <div>
         <div>
             <label for="superPassSelection">Pass:</label>
-            <select id="superPassSelection">
-                <option v-for="superPass in customerData.super_passes">{{ superPass.name }}</option>
+            <select v-on:change="changeSuperPass" id="superPassSelection">
+                <option v-for="superPass in customerData.super_passes" :value="superPass.id">{{ superPass.name }}</option>
             </select>
         </div>
         <h3>Events you're attending:</h3>
@@ -106,25 +106,27 @@ export default {
             debugMode: true // [9]
         });
         this.superPass = this.customerData.super_passes[0];
-
-        var events = this.superPass.events.map( function(event) {
-            return {
-                "id": event.id,
-                "title": event.name.text,
-                "allDay": false,
-                "start": moment(event.start.local).format("YYYY-MM-DD HH:mm"),
-                "end": moment(event.end.local).format("YYYY-MM-DD HH:mm"),
-                "description": event.description.html,
-                "image": event.logo ? event.logo.original.url : false,
-                "url": event.url,
-            }
-        });
-
-        this.startDate = events[0].start;
-
-        this.events = events;
+        this.updateEvents();
     },
     methods: {
+        updateEvents: function(){
+            var events = this.superPass.events.map( function(event) {
+                return {
+                    "id": event.id,
+                    "title": event.name.text,
+                    "allDay": false,
+                    "start": moment(event.start.local).format("YYYY-MM-DD HH:mm"),
+                    "end": moment(event.end.local).format("YYYY-MM-DD HH:mm"),
+                    "description": event.description.html,
+                    "image": event.logo ? event.logo.original.url : false,
+                    "url": event.url,
+                }
+            });
+
+            this.startDate = events[0].start;
+
+            this.events = events;
+        },
         moment: function() {
           return moment();
         },
@@ -157,6 +159,14 @@ export default {
                         }
                     })
             }
+        },
+        changeSuperPass: function(e) {
+            let id = e.target.value;
+            let superPass = this.customerData.super_passes.find(function(superPass) {
+                return superPass.id == id;
+            })
+            this.superPass = superPass;
+            this.updateEvents();
         }
     }
 }

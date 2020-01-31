@@ -117,7 +117,7 @@ function esp_can_customer_attend( $customer, $event_id, $super_pass_id ) {
         $start_time = strtotime( $cEvent['start']['local'] );
         $end_time = strtotime( $cEvent['end']['local'] );
 
-        if ( $event_start_time < $end_time && $start_time < $event_end_time && ! (!$record->confirmed && (int)$record->event_id === (int)$event_id ) ) {
+        if ( $event_start_time < $end_time && $start_time < $event_end_time && ! (!$record->confirmed && (int)$record->event_id === (int)$event_id ) && (int) $super_pass_id === (int) $record->super_pass_id ) {
             $overlap = true;
         }
 
