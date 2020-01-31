@@ -1,0 +1,3 @@
+[submodule "includes/libraries/eventbrite-sdk-php"]
+	path = includes/libraries/eventbrite-sdk-php
+	url = https://github.com/eventbrite/eventbrite-sdk-php.git

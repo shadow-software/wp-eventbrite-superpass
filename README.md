@@ -1,1 +1,1 @@
-"# wp-eventbrite-superpass" 
+# WP Eventbrite Superpass
