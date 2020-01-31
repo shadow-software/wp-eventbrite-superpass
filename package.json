@@ -1,0 +1,38 @@
+{
+  "name": "wp-eventbrite-superpass",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/main.js",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "watch": "webpack --watch",
+    "build": "webpack"
+  },
+  "dependencies": {
+    "micromodal": "^0.4.2",
+    "moment": "^2.24.0",
+    "vue-cal": "^2.19.1"
+  },
+  "devDependencies": {
+    "css-loader": "^3.0.0",
+    "node-sass": "^4.11.0",
+    "sass-loader": "^7.1.0",
+    "source-map-loader": "^0.2.4",
+    "vue": "^2.6.6",
+    "vue-loader": "^15.7.0",
+    "vue-style-loader": "^4.1.2",
+    "vue-template-compiler": "^2.6.10",
+    "webpack": "^4.29.6",
+    "webpack-cli": "^3.3.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shadow-software/wp-eventbrite-superpass.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shadow-software/wp-eventbrite-superpass/issues"
+  },
+  "homepage": "https://github.com/shadow-software/wp-eventbrite-superpass#readme"
+}

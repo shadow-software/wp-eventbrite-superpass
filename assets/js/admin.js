@@ -129,6 +129,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
             createSuperPass: function() {
               if (!this.superPassUpdating && this.superPassValid()) {
                   this.superPassUpdating = true;
+                  this.updating = true;
                   let data = new FormData();
                   data.append('action', 'esp_create_super_pass');
                   data.append('name', this.superPass.name);
@@ -151,6 +152,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                               this.message.content = response.data.message; 
                               this.message.type = "warning";
                           }
+                          this.updating = false;
                       })
                       .catch(error => {
                           console.log(error);
@@ -194,20 +196,5 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 return this.superPass.name && this.superPass.cost && this.superPass.events.length > 0;
             }
         }
-    });
-
-    Vue.component('spinner', {
-        template:
-            '<div class="preloader-wrapper small active">\n' +
-            '    <div class="spinner-layer spinner-green-only">\n' +
-            '      <div class="circle-clipper left">\n' +
-            '        <div class="circle"></div>\n' +
-            '      </div><div class="gap-patch">\n' +
-            '        <div class="circle"></div>\n' +
-            '      </div><div class="circle-clipper right">\n' +
-            '        <div class="circle"></div>\n' +
-            '      </div>\n' +
-            '    </div>\n' +
-            '  </div>',
     });
 });

@@ -22,6 +22,7 @@ function load_scripts( $hook ) {
     $js_dir = ESP_PLUGIN_URL . 'assets/js/';
     $css_dir = ESP_PLUGIN_URL . 'assets/css/';
 
+    // TODO: Switch over to ES6 friendly environment and use webpack
     // Get Vue, we're going to use the development version for now
     wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue/dist/vue.js', []);
 
@@ -42,5 +43,38 @@ function load_scripts( $hook ) {
         wp_localize_script( 'esp-admin-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
     }
 }
-
 add_action( 'admin_enqueue_scripts', 'load_scripts', 100 );
+
+/**
+ * Load our front end scripts
+ *
+ * @since 1.0
+ * @return void
+ */
+function load_frontend_scripts() {
+    global $wp_query;
+
+    $js_dir = ESP_PLUGIN_URL . 'assets/js/';
+    $css_dir = ESP_PLUGIN_URL . 'assets/css/';
+
+    // Only load our custom scripts if we are on our custom endpoint or shortcode page.
+    /* TODO: Use webpack for all dependencies, right now there are some libraries used outside of our Vue Components,
+        so our dependencies need to be split up this way for now.
+    */
+    if( isset( $wp_query->query_vars['superpass'] ) ) {
+        wp_register_script( 'esp-frontend-scripts', $js_dir . 'bundle.js', ['axios'], ESP_VERSION, false );
+    }
+
+    if ( isset( $wp_query->query_vars['superpass'] ) || $wp_query->query_vars['pagename'] === 'eventbrite-checkout' ) {
+        wp_enqueue_script( 'axios', 'https://unpkg.com/axios@0.19.0/dist/axios.min.js', [], '0.19.0' );
+        wp_enqueue_style( 'extra', $css_dir . 'extra.css' );
+        wp_enqueue_script( 'esp-misc-scripts', $js_dir . 'helpers.js', [], ESP_VERSION, false );
+        wp_localize_script( 'esp-frontend-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
+        $customer = apply_filters( 'esp_get_customer_data', '' );
+        $attending_events = apply_filters( 'esp_get_extended_attendance_record', '' );
+        $page = get_page_by_title( 'Eventbrite Checkout', OBJECT );
+        wp_localize_script( 'esp-frontend-scripts', 'esp_data', array( 'customer_data' => $customer, 'eb_checkout_url' =>  $page->guid, 'attending_events' => $attending_events ) );
+        wp_enqueue_script( 'esp-frontend-scripts' );
+    }
+}
+add_action( 'wp_enqueue_scripts', 'load_frontend_scripts' );
