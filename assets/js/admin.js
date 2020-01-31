@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 content: "",
                 type: "",
             },
-            editingPasses: false,
+            editingPass: false,
             ready: false,
             eventbriteData: {
                 appKey: undefined,
@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
             creatingPass: false,
             superPasses: [],
             superPass: {
+                id: null,
                 name : "",
                 cost : 0.00,
                 events: [],
@@ -178,6 +179,60 @@ document.addEventListener('DOMContentLoaded', (e) => {
                       })
                       .catch(error => {
                          console.log(error);
+                      })
+              }
+            },
+            cancelEdit: function(e) {
+                if (!this.superPassUpdating) {
+                    this.resetSuperPass();
+                    this.editingPass = false;
+                }
+            },
+            resetSuperPass: function() {
+                this.superPass = {
+                    id: null,
+                    name : "",
+                    events: [],
+                    cost: 0
+                }
+            },
+            editSuperPass: function(e) {
+                var id = e.target.value;
+                var superPass = this.superPasses.find( function(superPass) {
+                    return superPass.id == id;
+                })
+                if(superPass) {
+                    superPass = JSON.parse(JSON.stringify(superPass));
+                    superPass.events = superPass.events.map(function(event) {
+                        return event.id;
+                    });
+                    this.superPass = superPass;
+                    this.editingPass = true;
+                }
+            },
+            updateSuperPass: function(e) {
+              if(!this.superPassUpdating) {
+                  this.superPassUpdating = true;
+                  var data = new FormData();
+                  data.append('action', 'esp_update_super_pass');
+                  data.append('id', this.superPass.id);
+                  data.append('name', this.superPass.name);
+                  data.append('cost', this.superPass.cost);
+                  data.append('events', this.superPass.events);
+
+                  axios
+                      .post(ajaxurl, data)
+                      .then(response => {
+                          if (response.data.success === true) {
+                              this.getSuperPasses();
+                              this.resetSuperPass();
+                              this.editingPass = false;
+                          } else {
+                              // Display error message
+                          }
+                      })
+                      .catch(error => {
+                          console.log(error);
                       })
               }
             },

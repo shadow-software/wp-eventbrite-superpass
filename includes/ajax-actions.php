@@ -137,6 +137,39 @@ function esp_create_super_pass() {
 }
 add_action( 'wp_ajax_esp_create_super_pass', 'esp_create_super_pass' );
 
+function esp_update_super_pass() {
+    $result = array(
+        'success' => false,
+    );
+
+    if ( isset( $_POST['id'] ) && isset( $_POST['cost'] ) && isset( $_POST['name'] ) && isset( $_POST['events'] ) ) {
+        $id = sanitize_text_field( $_POST['id'] );
+        $cost = sanitize_text_field( $_POST['cost'] );
+        $name = sanitize_text_field( $_POST['name'] );
+        $events = $_POST['events'];
+
+        $esp = ESP();
+        $super_pass = $esp->get_super_pass_by_id( $id );
+
+        // Remove all events for this super pass
+        delete_post_meta( $super_pass->id, 'ESP_SUPER_PASS_EVENT' );
+
+        $super_pass->name = $name;
+        $super_pass->cost = $cost;
+        update_post_meta( $super_pass->id, 'ESP_SUPER_PASS_EVENT', $events );
+        $updated = $super_pass->update();
+        $result['success'] = $updated;
+        $result['message'] = $updated ? 'Superpass successfully updated' : 'Something went wrong';
+    }
+
+    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( "Content-type: application/json" );
+        echo json_encode( $result );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_update_super_pass', 'esp_update_super_pass' );
+
 function esp_delete_super_pass() {
     $result = array(
         'success' => false,

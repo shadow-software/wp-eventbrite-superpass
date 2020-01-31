@@ -357,9 +357,11 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
                 $values = get_post_meta( $result->ID );
                 $super_pass = new ESP_Super_Pass( $values[ 'ESP_SUPER_PASS_COST' ][0], $result->post_title, $result->ID );
                 $super_pass->wc_id = $values[ 'ESP_SUPER_PASS_WC_ID' ][0];
-                $events = explode( ',', $values[ 'ESP_SUPER_PASS_EVENT'][0] );
-                foreach ( $events as $event ) {
-                    $super_pass->events[] = $event;
+                if ( isset( $values['ESP_SUPER_PASS_EVENT'] ) ){
+                    $events = explode( ',', $values[ 'ESP_SUPER_PASS_EVENT'][0] );
+                    foreach ( $events as $event ) {
+                        $super_pass->events[] = $event;
+                    }
                 }
                 self::$instance->super_passes[] = $super_pass;
             }
