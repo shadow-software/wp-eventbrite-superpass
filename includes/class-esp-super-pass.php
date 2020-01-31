@@ -157,51 +157,53 @@ class ESP_Super_Pass {
      * @return void
      */
     public function create_super_pass_as_wc_product() {
-        $post = array(
-            'post_content' => '',
-            'post_status' => "publish",
-            'post_title' => $this->name,
-            'post_parent' => '',
-            'post_type' => "product",
-        );
+        $name               = 'My Product Name';
+        $will_manage_stock  = false;
+        $is_virtual         = true;
+        $price              = $this->cost;
+        $is_on_sale         = true;
+        $product            = new \WC_Product();
+        $image_id           = 0; // Attachment ID
+        $product->set_props( array(
+            'name'               => $this->name,
+            'featured'           => false,
+            'catalog_visibility' => 'visible',
+            'description'        => 'My awesome product description',
+            'short_description'  => 'My short description',
+            'sku'                => sanitize_title( $this->name ) . '-' . rand(0, 100),
+            'regular_price'      => $price,
+            'sale_price'         => '',
+            'date_on_sale_from'  => '',
+            'date_on_sale_to'    => '',
+            'total_sales'        => 0,
+            'tax_status'         => 'taxable',
+            'tax_class'          => '',
+            'manage_stock'       => $will_manage_stock,
+            'stock_quantity'     => $will_manage_stock ? 100 : null, // Stock quantity or null
+            'stock_status'       => 'instock',
+            'backorders'         => 'no',
+            'sold_individually'  => true,
+            'weight'             => $is_virtual ? '' : 15,
+            'length'             => $is_virtual ? '' : 15,
+            'width'              => $is_virtual ? '' : 15,
+            'height'             => $is_virtual ? '' : 15,
+            'upsell_ids'         => '',
+            'cross_sell_ids'     => '',
+            'parent_id'          => 0,
+            'reviews_allowed'    => true,
+            'purchase_note'      => '',
+            'menu_order'         => 10,
+            'virtual'            => $is_virtual,
+            'downloadable'       => false,
+            'category_ids'       => '',
+            'tag_ids'            => '',
+            'shipping_class_id'  => 0,
+            'image_id'           => $image_id,
+        ) );
 
-        //Create post
-        $post_id = wp_insert_post( $post );
-
-        if($post_id){
-            $this->wc_id = $post_id;
-            add_post_meta( $this->id, 'ESP_SUPER_PASS_WC_ID', $post_id );
-            /*
-            $attach_id = get_post_meta($product->parent_id, "_thumbnail_id", true);
-            add_post_meta($post_id, '_thumbnail_id', $attach_id);
-            */
-        }
-
-        wp_set_object_terms( $post_id, 'Eventbrite Superpass', 'product_cat' );
-        wp_set_object_terms( $post_id, 'simple', 'product_type');
-
-        update_post_meta( $post_id, '_visibility', 'visible' );
-        update_post_meta( $post_id, '_stock_status', 'instock');
-        update_post_meta( $post_id, 'total_sales', '0');
-        update_post_meta( $post_id, '_downloadable', 'yes');
-        update_post_meta( $post_id, '_virtual', 'yes');
-        update_post_meta( $post_id, '_regular_price', $this->cost );
-        update_post_meta( $post_id, '_sale_price', $this->cost );
-        update_post_meta( $post_id, '_purchase_note', "" );
-        update_post_meta( $post_id, '_featured', "no" );
-        update_post_meta( $post_id, '_weight', "" );
-        update_post_meta( $post_id, '_length', "" );
-        update_post_meta( $post_id, '_width', "" );
-        update_post_meta( $post_id, '_height', "" );
-        update_post_meta($post_id, '_sku', "");
-        update_post_meta( $post_id, '_product_attributes', array());
-        update_post_meta( $post_id, '_sale_price_dates_from', "" );
-        update_post_meta( $post_id, '_sale_price_dates_to', "" );
-        update_post_meta( $post_id, '_price', "1" );
-        update_post_meta( $post_id, '_sold_individually', "" );
-        update_post_meta( $post_id, '_manage_stock', "no" );
-        update_post_meta( $post_id, '_backorders', "no" );
-        update_post_meta( $post_id, '_stock', "" );
+        $product->save();
+        $this->wc_id = $product->get_id();
+        update_post_meta( $this->id, 'ESP_SUPER_PASS_WC_ID', $this->wc_id );
     }
 
     /**
