@@ -241,9 +241,10 @@ function esp_confirm_eb_order() {
 
     if( isset( $_POST['attendance_id'] )) {
         $attendance_id = $_POST['attendance_id'];
+        $order_id = $_POST['order_id'];
         $attendance_record = new ESP_Attendance_Record( null, null, null,$attendance_id );
         if ( isset( $attendance_record->event_id ) ) {
-            $attendance_record->set_confirmed();
+            $attendance_record->set_confirmed( $order_id );
             $result['success'] = true;
             $result['message'] = "Ticket purchase successful";
             $result['redirect'] = get_site_url( null, '/my-account/superpass' );
@@ -257,3 +258,23 @@ function esp_confirm_eb_order() {
     }
 }
 add_action( 'wp_ajax_esp_confirm_eb_order', 'esp_confirm_eb_order' );
+
+function esp_cancel_eb_order() {
+    $esp = ESP();
+
+    $current_user_id = get_current_user_id();
+    $customer = $esp->get_customer_by_id( $current_user_id );
+    $attendance_id = $_POST['attendance_id'];
+
+    foreach( $customer->attending as $record ) {
+        if( $record->id === (integer)$attendance_id ) {
+            // Check on order.
+            $result = $esp->eb_sdk->client->get(
+                "/orders/{$record->order_id}/",
+                array()
+            );
+            var_dump($result);
+        }
+    }
+}
+add_action( 'wp_ajax_esp_cancel_eb_order', 'esp_cancel_eb_order' );

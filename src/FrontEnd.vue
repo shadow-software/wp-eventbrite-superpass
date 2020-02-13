@@ -53,13 +53,16 @@
                         <div style="width:100%;text-align:right;">
                             <a :href="modal.url" target="_blank">View full details >></a>
                         </div>
-                        <div v-if="modal.message" style="width:100%;" class="modal-message">
-                            {{modal.message}}
+                        <div v-if="modal.message" style="width:100%;" class="modal-message" v-html="modal.message">
                         </div>
                     </main>
                     <footer class="modal__footer">
-                        <button v-on:click="attendEvent" class="modal__btn modal__btn-primary">
+                        <button v-on:click="attendEvent" v-if="!attendingEvent" class="modal__btn modal__btn-primary">
                             <span v-if="!updating">Attend This Event</span>
+                            <spinner v-if="updating"></spinner>
+                        </button>
+                        <button v-on:click="leaveEvent" v-if="attendingEvent" class="modal__btn modal__btn-primary">
+                            <span v-if="!updating">Leave This Event</span>
                             <spinner v-if="updating"></spinner>
                         </button>
                         <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
@@ -91,6 +94,7 @@ export default {
         modal: {
 
         },
+        currentRecord: {},
         updating: false,
     }),
     mounted() {
@@ -135,7 +139,8 @@ export default {
                 title: event.title,
                 content: event.description,
                 image: event.image,
-                url: event.url
+                url: event.url,
+                id: event.id,
             }
             this.currentEvent = event;
             MicroModal.show('esp-modal');
@@ -159,6 +164,34 @@ export default {
                         }
                     })
             }
+        },
+        attendingEvent: function() {
+            let result = this.extendedAttending.find( (record) => {
+               return record.super_pass_id === this.superPass.id && record.event_id === this.modal.id;
+            });
+
+            this.currentRecord = result;
+            return result !== undefined;
+        },
+        leaveEvent: function() {
+            let data = new FormData();
+            let result = this.extendedAttending.find( (record) => {
+                return record.super_pass_id == this.superPass.id && record.event_id == this.modal.id;
+            })
+            console.log(result);
+            /*
+            if (!this.currentRecord){
+                this.currentRecord = this.extendedAttending.find( (record) => {
+                    return record.super_pass_id === this.superPass.id && record.event_id === this.modal.id;
+                })
+            }
+            this.updating = true;
+            if (this.currentRecord.order_id){
+                this.updating = false;
+                this.modal.message = "You have already received your tickets from Eventbrite, please cancel your ticket" +
+                    " through Eventbrite. <a target='blank' href='https://www.eventbrite.ca/support/articles/en_US/How_To/how-to-cancel-your-free-registration?lg=en_CA'>How to cancel my ticket</a>"
+            }
+            */
         },
         changeSuperPass: function(e) {
             let id = e.target.value;

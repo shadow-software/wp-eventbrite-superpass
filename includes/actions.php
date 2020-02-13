@@ -151,6 +151,7 @@ function esp_get_extended_attendance_record() {
         if ( $record->confirmed ) {
             $event = $esp->get_event_by_id( $record->event_id );
             $event['super_pass_id'] = (int)$record->super_pass_id;
+            $event['order_id'] = $record->order_id;
             $events[] = $event;
         }
     }
@@ -180,7 +181,8 @@ function eventbrite_checkout_content() {
             <script src="https://www.eventbrite.com/static/widgets/eb_widgets.js"></script>
 
             <script type="text/javascript">
-                var markComplete = function() {
+                var markComplete = function(obj) {
+                    var orderId = obj.orderId;
                     var overlay = document.getElementById("esp-overlay");
                     overlay.style.display = "block";
                     var ajaxurl = ajax_object.ajax_url;
@@ -188,6 +190,7 @@ function eventbrite_checkout_content() {
                     var data = new FormData();
                     data.append('action', 'esp_confirm_eb_order');
                     data.append('attendance_id', attendance_id);
+                    data.append('order_id', orderId);
 
                     axios.post(ajaxurl, data)
                     .then(function(response) {

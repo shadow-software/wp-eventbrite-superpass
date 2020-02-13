@@ -30729,6 +30729,9 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
 
 
 
@@ -30750,6 +30753,7 @@ __webpack_require__.r(__webpack_exports__);
         modal: {
 
         },
+        currentRecord: {},
         updating: false,
     }),
     mounted() {
@@ -30794,7 +30798,8 @@ __webpack_require__.r(__webpack_exports__);
                 title: event.title,
                 content: event.description,
                 image: event.image,
-                url: event.url
+                url: event.url,
+                id: event.id,
             }
             this.currentEvent = event;
             micromodal__WEBPACK_IMPORTED_MODULE_2__["default"].show('esp-modal');
@@ -30818,6 +30823,34 @@ __webpack_require__.r(__webpack_exports__);
                         }
                     })
             }
+        },
+        attendingEvent: function() {
+            let result = this.extendedAttending.find( (record) => {
+               return record.super_pass_id === this.superPass.id && record.event_id === this.modal.id;
+            });
+
+            this.currentRecord = result;
+            return result !== undefined;
+        },
+        leaveEvent: function() {
+            let data = new FormData();
+            let result = this.extendedAttending.find( (record) => {
+                return record.super_pass_id == this.superPass.id && record.event_id == this.modal.id;
+            })
+            console.log(result);
+            /*
+            if (!this.currentRecord){
+                this.currentRecord = this.extendedAttending.find( (record) => {
+                    return record.super_pass_id === this.superPass.id && record.event_id === this.modal.id;
+                })
+            }
+            this.updating = true;
+            if (this.currentRecord.order_id){
+                this.updating = false;
+                this.modal.message = "You have already received your tickets from Eventbrite, please cancel your ticket" +
+                    " through Eventbrite. <a target='blank' href='https://www.eventbrite.ca/support/articles/en_US/How_To/how-to-cancel-your-free-registration?lg=en_CA'>How to cancel my ticket</a>"
+            }
+            */
         },
         changeSuperPass: function(e) {
             let id = e.target.value;
@@ -31028,40 +31061,51 @@ var render = function() {
                       ),
                       _vm._v(" "),
                       _vm.modal.message
-                        ? _c(
-                            "div",
-                            {
-                              staticClass: "modal-message",
-                              staticStyle: { width: "100%" }
-                            },
-                            [
-                              _vm._v(
-                                "\n                        " +
-                                  _vm._s(_vm.modal.message) +
-                                  "\n                    "
-                              )
-                            ]
-                          )
+                        ? _c("div", {
+                            staticClass: "modal-message",
+                            staticStyle: { width: "100%" },
+                            domProps: { innerHTML: _vm._s(_vm.modal.message) }
+                          })
                         : _vm._e()
                     ]
                   ),
                   _vm._v(" "),
                   _c("footer", { staticClass: "modal__footer" }, [
-                    _c(
-                      "button",
-                      {
-                        staticClass: "modal__btn modal__btn-primary",
-                        on: { click: _vm.attendEvent }
-                      },
-                      [
-                        !_vm.updating
-                          ? _c("span", [_vm._v("Attend This Event")])
-                          : _vm._e(),
-                        _vm._v(" "),
-                        _vm.updating ? _c("spinner") : _vm._e()
-                      ],
-                      1
-                    ),
+                    !_vm.attendingEvent
+                      ? _c(
+                          "button",
+                          {
+                            staticClass: "modal__btn modal__btn-primary",
+                            on: { click: _vm.attendEvent }
+                          },
+                          [
+                            !_vm.updating
+                              ? _c("span", [_vm._v("Attend This Event")])
+                              : _vm._e(),
+                            _vm._v(" "),
+                            _vm.updating ? _c("spinner") : _vm._e()
+                          ],
+                          1
+                        )
+                      : _vm._e(),
+                    _vm._v(" "),
+                    _vm.attendingEvent
+                      ? _c(
+                          "button",
+                          {
+                            staticClass: "modal__btn modal__btn-primary",
+                            on: { click: _vm.leaveEvent }
+                          },
+                          [
+                            !_vm.updating
+                              ? _c("span", [_vm._v("Leave This Event")])
+                              : _vm._e(),
+                            _vm._v(" "),
+                            _vm.updating ? _c("spinner") : _vm._e()
+                          ],
+                          1
+                        )
+                      : _vm._e(),
                     _vm._v(" "),
                     _c(
                       "button",
