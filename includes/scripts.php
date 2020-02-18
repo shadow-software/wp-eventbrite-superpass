@@ -24,7 +24,7 @@ function load_scripts( $hook ) {
 
     // TODO: Switch over to ES6 friendly environment and use webpack
     // Get Vue, we're going to use the development version for now
-    wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue/dist/vue.js', []);
+    wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue', []);
 
     // Only load the following if we are on our admin management page
     if ( $hook === 'toplevel_page_eventbrite-superpass') {

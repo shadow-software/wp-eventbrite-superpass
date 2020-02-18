@@ -2,7 +2,7 @@ const { VueLoaderPlugin } = require('vue-loader')
 var path = require('path');
 
 module.exports = {
-    mode: 'development',
+    mode: 'production',
     entry: './src/main.js',
     module: {
         rules: [
