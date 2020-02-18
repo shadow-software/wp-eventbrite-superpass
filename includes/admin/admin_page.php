@@ -116,7 +116,6 @@ function main() {
                                 </ul>
                                 <div style="position: absolute;top: calc(30%);right: 20px;">
                                     <button v-on:click="editSuperPass" :value="superpass.id" class="btn btn-primary text-white">EDIT</button>
-                                    <button v-on:click="deleteSuperPass" :value="superpass.id" class="btn btn-danger text-white">DELETE</button>
                                 </div>
                             </td>
                         </tr>
