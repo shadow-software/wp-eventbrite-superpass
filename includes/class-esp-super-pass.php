@@ -157,11 +157,9 @@ class ESP_Super_Pass {
      * @return void
      */
     public function create_super_pass_as_wc_product() {
-        $name               = 'My Product Name';
         $will_manage_stock  = false;
         $is_virtual         = true;
         $price              = $this->cost;
-        $is_on_sale         = true;
         $product            = new \WC_Product();
         $image_id           = 0; // Attachment ID
         $product->set_props( array(

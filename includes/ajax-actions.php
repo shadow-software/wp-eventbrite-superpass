@@ -261,7 +261,10 @@ add_action( 'wp_ajax_esp_confirm_eb_order', 'esp_confirm_eb_order' );
 
 function esp_cancel_eb_order() {
     $esp = ESP();
-
+    $result = [
+        'success' => false,
+        'message' => "Something went wrong. Please try again."
+    ];
     $current_user_id = get_current_user_id();
     $customer = $esp->get_customer_by_id( $current_user_id );
     $attendance_id = $_POST['attendance_id'];
@@ -269,12 +272,46 @@ function esp_cancel_eb_order() {
     foreach( $customer->attending as $record ) {
         if( $record->id === (integer)$attendance_id ) {
             // Check on order.
-            $result = $esp->eb_sdk->client->get(
-                "/orders/{$record->order_id}/",
+            $res = $esp->eb_sdk->client->get(
+                "/discounts/{$record->coupon_eb_id}/",
                 array()
             );
-            var_dump($result);
+            if ( $res['quantity_sold'] === 1 ) {
+                // An order has already been made using the user's one time generated discount code.
+                // They must cancel the order through Eventbrite in order to change event slots.
+                $result = array(
+                    'success' => false,
+                    'message' => "You have already received your tickets from Eventbrite, please cancel your ticket" .
+                        " through Eventbrite. <a target='blank' href='https://www.eventbrite.ca/support/articles/en_US/How_To/how-to-cancel-your-free-registration?lg=en_CA'>How to cancel my ticket</a>"
+                );
+            } else {
+                // The order hasn't been placed yet. Cancel the one time coupon code.
+                $record->delete_coupon();
+                if ( isset( $res['id'] ) ) {
+                    $result = array(
+                        'success' => true,
+                        'message' => "You are no longer set to attend this event. Feel free to choose another event in this timeslot.",
+                    );
+                }
+            }
         }
+    }
+
+    if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( 'Content-type: application/json' );
+        echo json_encode( $result );
+        wp_die();
     }
 }
 add_action( 'wp_ajax_esp_cancel_eb_order', 'esp_cancel_eb_order' );
+
+function esp_get_extended_attendance() {
+    $attending_events = apply_filters( 'esp_get_extended_attendance_record', '' );
+
+    if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( 'Content-type: application/json' );
+        echo json_encode( array( 'attending_events' => $attending_events ) );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_get_extended_attendance', 'esp_get_extended_attendance_record' );

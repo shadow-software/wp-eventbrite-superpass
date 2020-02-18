@@ -57,11 +57,14 @@
                         </div>
                     </main>
                     <footer class="modal__footer">
-                        <button v-on:click="attendEvent" v-if="!attendingEvent" class="modal__btn modal__btn-primary">
+                        <button v-on:click="attendEvent" v-if="canAttend" class="modal__btn modal__btn-primary">
                             <span v-if="!updating">Attend This Event</span>
                             <spinner v-if="updating"></spinner>
                         </button>
-                        <button v-on:click="leaveEvent" v-if="attendingEvent" class="modal__btn modal__btn-primary">
+                        <a :href="checkoutURL + '?event_id=' + currentRecord.id + '&attendance=' + currentRecord.record_id" v-if="!canAttend && currentRecord.order_id === null" class="modal__btn modal__btn-primary">
+                            <span>Get your ticket</span>
+                        </a>
+                        <button v-on:click="leaveEvent" v-if="!canAttend" class="modal__btn modal__btn-primary">
                             <span v-if="!updating">Leave This Event</span>
                             <spinner v-if="updating"></spinner>
                         </button>
@@ -87,10 +90,12 @@ export default {
     data: () => ({
         extendedAttending: esp_data.attending_events,
         events: [],
+        checkoutURL : esp_data.eb_checkout_url,
         superPass: { id: null },
         startDate: '',
         customerData: esp_data.customer_data,
         currentEvent: {},
+        canAttend : true,
         modal: {
 
         },
@@ -143,6 +148,7 @@ export default {
                 id: event.id,
             }
             this.currentEvent = event;
+            this.canAttend = this.checkCanAttendEvent();
             MicroModal.show('esp-modal');
         },
         attendEvent: function() {
@@ -165,33 +171,37 @@ export default {
                     })
             }
         },
-        attendingEvent: function() {
+        checkCanAttendEvent: function() {
             let result = this.extendedAttending.find( (record) => {
-               return record.super_pass_id === this.superPass.id && record.event_id === this.modal.id;
+               return record.super_pass_id === this.superPass.id && record.id === this.modal.id;
             });
 
             this.currentRecord = result;
-            return result !== undefined;
+            return result === undefined;
         },
         leaveEvent: function() {
-            let data = new FormData();
-            let result = this.extendedAttending.find( (record) => {
-                return record.super_pass_id == this.superPass.id && record.event_id == this.modal.id;
-            })
-            console.log(result);
-            /*
-            if (!this.currentRecord){
-                this.currentRecord = this.extendedAttending.find( (record) => {
-                    return record.super_pass_id === this.superPass.id && record.event_id === this.modal.id;
-                })
-            }
             this.updating = true;
-            if (this.currentRecord.order_id){
-                this.updating = false;
-                this.modal.message = "You have already received your tickets from Eventbrite, please cancel your ticket" +
-                    " through Eventbrite. <a target='blank' href='https://www.eventbrite.ca/support/articles/en_US/How_To/how-to-cancel-your-free-registration?lg=en_CA'>How to cancel my ticket</a>"
-            }
-            */
+            let data = new FormData();
+            data.append('action', 'esp_cancel_eb_order');
+            data.append('attendance_id', this.currentRecord.record_id);
+            let ajaxurl = ajax_object.ajax_url;
+            axios
+                .post(ajaxurl, data)
+                .then(response => {
+                    this.updating = false;
+                    this.modal.message = response.data.message;
+                    this.getExtendedAttending();
+                })
+        },
+        getExtendedAttending: function(e) {
+            let data = new FormData();
+            data.append('action', 'esp_get_extended_attending');
+            let ajaxurl = ajax_object.ajax_url;
+            axios
+                .post(ajaxurl, data)
+                .then(response => {
+                    this.extendedAttending = response.data.attending_events;
+                })
         },
         changeSuperPass: function(e) {
             let id = e.target.value;

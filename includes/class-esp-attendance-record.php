@@ -223,11 +223,12 @@ class ESP_Attendance_Record {
      *
      * @return void
      * @since 1.0
+     * @return mixed
      * @access public
      */
     public function delete_coupon() {
         $esp = ESP();
-        $result = $esp->eb_sdk->client->delete(
+        return $esp->eb_sdk->client->delete(
             "/discounts/{$this->coupon_eb_id}/",
             array()
         );
@@ -257,6 +258,13 @@ class ESP_Attendance_Record {
      * @return boolean
      */
     public function delete() {
+        delete_post_meta( $this->id, "ESP_RECORD_SP_ID" );
+        delete_post_meta( $this->id, "ESP_RECORD_USER_ID" );
+        delete_post_meta( $this->id, "ESP_RECORD_EVENT_ID" );
+        delete_post_meta( $this->id, "ESP_RECORD_COUPON" );
+        delete_post_meta( $this->id, "ESP_RECORD_CONFIRMED" );
+        delete_post_meta( $this->id, "ESP_EB_COUPON_ID" );
+        delete_post_meta( $this->id, "ESP_EB_ORDER_ID" );
         $result = wp_delete_post( $this->id );
 
         return $result !== false && $result !== null;

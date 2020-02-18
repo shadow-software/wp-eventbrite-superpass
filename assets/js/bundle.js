@@ -30732,6 +30732,9 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
 
 
 
@@ -30746,10 +30749,12 @@ __webpack_require__.r(__webpack_exports__);
     data: () => ({
         extendedAttending: esp_data.attending_events,
         events: [],
+        checkoutURL : esp_data.eb_checkout_url,
         superPass: { id: null },
         startDate: '',
         customerData: esp_data.customer_data,
         currentEvent: {},
+        canAttend : true,
         modal: {
 
         },
@@ -30802,6 +30807,7 @@ __webpack_require__.r(__webpack_exports__);
                 id: event.id,
             }
             this.currentEvent = event;
+            this.canAttend = this.checkCanAttendEvent();
             micromodal__WEBPACK_IMPORTED_MODULE_2__["default"].show('esp-modal');
         },
         attendEvent: function() {
@@ -30824,33 +30830,37 @@ __webpack_require__.r(__webpack_exports__);
                     })
             }
         },
-        attendingEvent: function() {
+        checkCanAttendEvent: function() {
             let result = this.extendedAttending.find( (record) => {
-               return record.super_pass_id === this.superPass.id && record.event_id === this.modal.id;
+               return record.super_pass_id === this.superPass.id && record.id === this.modal.id;
             });
 
             this.currentRecord = result;
-            return result !== undefined;
+            return result === undefined;
         },
         leaveEvent: function() {
-            let data = new FormData();
-            let result = this.extendedAttending.find( (record) => {
-                return record.super_pass_id == this.superPass.id && record.event_id == this.modal.id;
-            })
-            console.log(result);
-            /*
-            if (!this.currentRecord){
-                this.currentRecord = this.extendedAttending.find( (record) => {
-                    return record.super_pass_id === this.superPass.id && record.event_id === this.modal.id;
-                })
-            }
             this.updating = true;
-            if (this.currentRecord.order_id){
-                this.updating = false;
-                this.modal.message = "You have already received your tickets from Eventbrite, please cancel your ticket" +
-                    " through Eventbrite. <a target='blank' href='https://www.eventbrite.ca/support/articles/en_US/How_To/how-to-cancel-your-free-registration?lg=en_CA'>How to cancel my ticket</a>"
-            }
-            */
+            let data = new FormData();
+            data.append('action', 'esp_cancel_eb_order');
+            data.append('attendance_id', this.currentRecord.record_id);
+            let ajaxurl = ajax_object.ajax_url;
+            axios
+                .post(ajaxurl, data)
+                .then(response => {
+                    this.updating = false;
+                    this.modal.message = response.data.message;
+                    this.getExtendedAttending();
+                })
+        },
+        getExtendedAttending: function(e) {
+            let data = new FormData();
+            data.append('action', 'esp_get_extended_attending');
+            let ajaxurl = ajax_object.ajax_url;
+            axios
+                .post(ajaxurl, data)
+                .then(response => {
+                    this.extendedAttending = response.data.attending_events;
+                })
         },
         changeSuperPass: function(e) {
             let id = e.target.value;
@@ -31071,7 +31081,7 @@ var render = function() {
                   ),
                   _vm._v(" "),
                   _c("footer", { staticClass: "modal__footer" }, [
-                    !_vm.attendingEvent
+                    _vm.canAttend
                       ? _c(
                           "button",
                           {
@@ -31089,7 +31099,25 @@ var render = function() {
                         )
                       : _vm._e(),
                     _vm._v(" "),
-                    _vm.attendingEvent
+                    !_vm.canAttend && _vm.currentRecord.order_id === null
+                      ? _c(
+                          "a",
+                          {
+                            staticClass: "modal__btn modal__btn-primary",
+                            attrs: {
+                              href:
+                                _vm.checkoutURL +
+                                "?event_id=" +
+                                _vm.currentRecord.id +
+                                "&attendance=" +
+                                _vm.currentRecord.record_id
+                            }
+                          },
+                          [_c("span", [_vm._v("Get your ticket")])]
+                        )
+                      : _vm._e(),
+                    _vm._v(" "),
+                    !_vm.canAttend
                       ? _c(
                           "button",
                           {

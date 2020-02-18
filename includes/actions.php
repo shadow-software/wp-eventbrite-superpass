@@ -148,11 +148,34 @@ function esp_get_extended_attendance_record() {
 
     $events = [];
     foreach( $customer->attending as $record ) {
-        if ( $record->confirmed ) {
-            $event = $esp->get_event_by_id( $record->event_id );
-            $event['super_pass_id'] = (int)$record->super_pass_id;
-            $event['order_id'] = $record->order_id;
-            $events[] = $event;
+        if ( isset( $record->coupon ) ) {
+            // Check to see if the attendance record still exists.
+            $res = [];
+            if( isset( $record->order_id ) ) {
+                $res = $esp->eb_sdk->client->get(
+                    "/orders/{$record->order_id}/",
+                    array()
+                );
+            }
+
+            if( isset( $res['status'] ) && $res['status'] === "refunded") {
+                $result = $record->delete_coupon();
+                if ( $result['quantity_sold'] === 0 ) {
+                    // Only delete the record if the coupon is no longer in use.
+                    // Theoretically, someone could generate a coupon, use it, refund it and then have someone else use it
+                    // and generate another one. This is to prevent that. This way they will not be able to generate
+                    // another coupon for this Time Slot.
+                    $record->delete();
+                }
+            } else {
+                $event = $esp->get_event_by_id( $record->event_id );
+                $event['super_pass_id'] = (int)$record->super_pass_id;
+                $event['order_id'] = $record->order_id;
+                $event['confirmed'] = $record->confirmed;
+                $event['record_id'] = $record->id;
+                $event['debug'] = $res;
+                $events[] = $event;
+            }
         }
     }
 
