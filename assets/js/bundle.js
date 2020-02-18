@@ -30729,6 +30729,12 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
 
 
 
@@ -30743,13 +30749,16 @@ __webpack_require__.r(__webpack_exports__);
     data: () => ({
         extendedAttending: esp_data.attending_events,
         events: [],
+        checkoutURL : esp_data.eb_checkout_url,
         superPass: { id: null },
         startDate: '',
         customerData: esp_data.customer_data,
         currentEvent: {},
+        canAttend : true,
         modal: {
 
         },
+        currentRecord: {},
         updating: false,
     }),
     mounted() {
@@ -30794,9 +30803,11 @@ __webpack_require__.r(__webpack_exports__);
                 title: event.title,
                 content: event.description,
                 image: event.image,
-                url: event.url
+                url: event.url,
+                id: event.id,
             }
             this.currentEvent = event;
+            this.canAttend = this.checkCanAttendEvent();
             micromodal__WEBPACK_IMPORTED_MODULE_2__["default"].show('esp-modal');
         },
         attendEvent: function() {
@@ -30818,6 +30829,38 @@ __webpack_require__.r(__webpack_exports__);
                         }
                     })
             }
+        },
+        checkCanAttendEvent: function() {
+            let result = this.extendedAttending.find( (record) => {
+               return record.super_pass_id === this.superPass.id && record.id === this.modal.id;
+            });
+
+            this.currentRecord = result;
+            return result === undefined;
+        },
+        leaveEvent: function() {
+            this.updating = true;
+            let data = new FormData();
+            data.append('action', 'esp_cancel_eb_order');
+            data.append('attendance_id', this.currentRecord.record_id);
+            let ajaxurl = ajax_object.ajax_url;
+            axios
+                .post(ajaxurl, data)
+                .then(response => {
+                    this.updating = false;
+                    this.modal.message = response.data.message;
+                    this.getExtendedAttending();
+                })
+        },
+        getExtendedAttending: function(e) {
+            let data = new FormData();
+            data.append('action', 'esp_get_extended_attending');
+            let ajaxurl = ajax_object.ajax_url;
+            axios
+                .post(ajaxurl, data)
+                .then(response => {
+                    this.extendedAttending = response.data.attending_events;
+                })
         },
         changeSuperPass: function(e) {
             let id = e.target.value;
@@ -31028,40 +31071,69 @@ var render = function() {
                       ),
                       _vm._v(" "),
                       _vm.modal.message
-                        ? _c(
-                            "div",
-                            {
-                              staticClass: "modal-message",
-                              staticStyle: { width: "100%" }
-                            },
-                            [
-                              _vm._v(
-                                "\n                        " +
-                                  _vm._s(_vm.modal.message) +
-                                  "\n                    "
-                              )
-                            ]
-                          )
+                        ? _c("div", {
+                            staticClass: "modal-message",
+                            staticStyle: { width: "100%" },
+                            domProps: { innerHTML: _vm._s(_vm.modal.message) }
+                          })
                         : _vm._e()
                     ]
                   ),
                   _vm._v(" "),
                   _c("footer", { staticClass: "modal__footer" }, [
-                    _c(
-                      "button",
-                      {
-                        staticClass: "modal__btn modal__btn-primary",
-                        on: { click: _vm.attendEvent }
-                      },
-                      [
-                        !_vm.updating
-                          ? _c("span", [_vm._v("Attend This Event")])
-                          : _vm._e(),
-                        _vm._v(" "),
-                        _vm.updating ? _c("spinner") : _vm._e()
-                      ],
-                      1
-                    ),
+                    _vm.canAttend
+                      ? _c(
+                          "button",
+                          {
+                            staticClass: "modal__btn modal__btn-primary",
+                            on: { click: _vm.attendEvent }
+                          },
+                          [
+                            !_vm.updating
+                              ? _c("span", [_vm._v("Attend This Event")])
+                              : _vm._e(),
+                            _vm._v(" "),
+                            _vm.updating ? _c("spinner") : _vm._e()
+                          ],
+                          1
+                        )
+                      : _vm._e(),
+                    _vm._v(" "),
+                    !_vm.canAttend && _vm.currentRecord.order_id === null
+                      ? _c(
+                          "a",
+                          {
+                            staticClass: "modal__btn modal__btn-primary",
+                            attrs: {
+                              href:
+                                _vm.checkoutURL +
+                                "?event_id=" +
+                                _vm.currentRecord.id +
+                                "&attendance=" +
+                                _vm.currentRecord.record_id
+                            }
+                          },
+                          [_c("span", [_vm._v("Get your ticket")])]
+                        )
+                      : _vm._e(),
+                    _vm._v(" "),
+                    !_vm.canAttend
+                      ? _c(
+                          "button",
+                          {
+                            staticClass: "modal__btn modal__btn-primary",
+                            on: { click: _vm.leaveEvent }
+                          },
+                          [
+                            !_vm.updating
+                              ? _c("span", [_vm._v("Leave This Event")])
+                              : _vm._e(),
+                            _vm._v(" "),
+                            _vm.updating ? _c("spinner") : _vm._e()
+                          ],
+                          1
+                        )
+                      : _vm._e(),
                     _vm._v(" "),
                     _c(
                       "button",
