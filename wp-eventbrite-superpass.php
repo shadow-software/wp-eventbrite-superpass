@@ -148,6 +148,11 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         public static function instance() {
             if ( ! isset( self::$instance ) && ! ( self::$instance instanceof WP_Eventbrite_Superpass ) ) {
                 self::$instance = new WP_Eventbrite_Superpass();
+                // Start a session so we can cache some Eventbrite info to prevent unneeded cURL requests
+                if( !session_id() ) {
+                    session_start();
+                }
+
                 self::$instance->setup_constants();
                 self::$instance->init_db();
                 self::$instance->get_eventbrite_keys();
@@ -406,8 +411,16 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          */
         public function eventbrite_keys_valid() {
             if ( isset( self::$instance->token ) ) {
-                $user = self::$instance->eb_sdk->client->get('/users/me');
-                self::$instance->eb_user = $user;
+                $user = [];
+                if ( ! isset( $_SESSION['eb_user'] ) ) {
+                    $user = self::$instance->eb_sdk->client->get('/users/me');
+                    self::$instance->eb_user = $user;
+                    $_SESSION['eb_user'] = $user;
+                } else {
+                    $user = $_SESSION['eb_user'];
+                    self::$instance->eb_user = $user;
+                }
+
                 return isset( $user['id'] );
             }
             // If none of the keys have been set, obviously it's not valid

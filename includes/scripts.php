@@ -24,7 +24,7 @@ function load_scripts( $hook ) {
 
     // TODO: Switch over to ES6 friendly environment and use webpack
     // Get Vue, we're going to use the development version for now
-    wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue/dist/vue.js', []);
+    wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue', []);
 
     // Only load the following if we are on our admin management page
     if ( $hook === 'toplevel_page_eventbrite-superpass') {
@@ -63,6 +63,10 @@ function load_frontend_scripts() {
     */
     if( isset( $wp_query->query_vars['superpass'] ) ) {
         wp_register_script( 'esp-frontend-scripts', $js_dir . 'bundle.js', ['axios'], ESP_VERSION, false );
+        $customer = apply_filters( 'esp_get_customer_data', '' );
+        $attending_events = apply_filters( 'esp_get_extended_attendance_record', '' );
+        $page = get_page_by_title( 'Eventbrite Checkout', OBJECT );
+        wp_localize_script( 'esp-frontend-scripts', 'esp_data', array( 'customer_data' => $customer, 'eb_checkout_url' =>  $page->guid, 'attending_events' => $attending_events ) );
         wp_enqueue_script( 'esp-frontend-scripts' );
     }
 
@@ -71,10 +75,6 @@ function load_frontend_scripts() {
         wp_enqueue_style( 'extra', $css_dir . 'extra.css' );
         wp_register_script( 'esp-misc-scripts', $js_dir . 'helpers.js', [], ESP_VERSION, false );
         wp_localize_script( 'esp-misc-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
-        $customer = apply_filters( 'esp_get_customer_data', '' );
-        $attending_events = apply_filters( 'esp_get_extended_attendance_record', '' );
-        $page = get_page_by_title( 'Eventbrite Checkout', OBJECT );
-        wp_localize_script( 'esp-misc-scripts', 'esp_data', array( 'customer_data' => $customer, 'eb_checkout_url' =>  $page->guid, 'attending_events' => $attending_events ) );
         wp_enqueue_script( 'esp-misc-scripts' );
     }
 }

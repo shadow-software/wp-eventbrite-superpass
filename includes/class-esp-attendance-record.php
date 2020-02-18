@@ -66,6 +66,24 @@ class ESP_Attendance_Record {
     public $coupon;
 
     /**
+     * Eventbrite Object's ID for the coupon
+     *
+     * @since 1.0
+     * @access public
+     * @var string
+     */
+    public $coupon_eb_id;
+
+    /**
+     * Eventbrite Object's ID for the order that was placed
+     *
+     * @since 1.0
+     * @access public
+     * @var string
+     */
+    public $order_id;
+
+    /**
      * Has this ticket purchase been confirmed? (via Eventbrite's checkout order complete callback)
      *
      * @since 1.0
@@ -158,6 +176,14 @@ class ESP_Attendance_Record {
             $this->confirmed = $values['ESP_RECORD_CONFIRMED'][0];
         }
 
+        if ( isset( $values['ESP_EB_COUPON_ID'] ) ) {
+            $this->coupon_eb_id = $values['ESP_EB_COUPON_ID'][0];
+        }
+
+        if( isset( $values['ESP_EB_ORDER_ID'] ) ) {
+            $this->order_id = $values['ESP_EB_ORDER_ID'][0];
+        }
+
     }
 
     /**
@@ -169,7 +195,8 @@ class ESP_Attendance_Record {
      * @access public
      */
     public function create_coupon() {
-        $this->coupon = sha1( random_bytes( 32 ) );
+        $current_user = wp_get_current_user();
+        $this->coupon = $current_user->first_name . '-' . $current_user->last_name . '-' . sha1( random_bytes( 24 ) );
         add_post_meta( $this->id, 'ESP_RECORD_COUPON', $this->coupon );
         // Create coupon in Eventbrite's system
         $esp = ESP();
@@ -186,17 +213,39 @@ class ESP_Attendance_Record {
                 ),
             )
         );
+        // Save the Eventbrite ID for later use.
+        $this->coupon_eb_id = $result["id"];
+        add_post_meta( $this->id, 'ESP_EB_COUPON_ID', $this->coupon_eb_id );
+    }
+
+    /**
+     * Delete the coupon (used for removing attendance record before purchase)
+     *
+     * @return void
+     * @since 1.0
+     * @return mixed
+     * @access public
+     */
+    public function delete_coupon() {
+        $esp = ESP();
+        return $esp->eb_sdk->client->delete(
+            "/discounts/{$this->coupon_eb_id}/",
+            array()
+        );
     }
 
     /**
      * Ticket purchase has been confirmed
      *
      * @since 1.0
+     * @param $order_id
      * @param $confirmed
      * @access public
      * @return void
      */
-    public function set_confirmed( $confirmed = true ) {
+    public function set_confirmed( $order_id, $confirmed = true ) {
+        $this->order_id = $order_id;
+        add_post_meta( $this->id, 'ESP_EB_ORDER_ID', $this->order_id );
         $this->confirmed = $confirmed;
         add_post_meta( $this->id, 'ESP_RECORD_CONFIRMED', $this->confirmed );
     }
@@ -209,6 +258,13 @@ class ESP_Attendance_Record {
      * @return boolean
      */
     public function delete() {
+        delete_post_meta( $this->id, "ESP_RECORD_SP_ID" );
+        delete_post_meta( $this->id, "ESP_RECORD_USER_ID" );
+        delete_post_meta( $this->id, "ESP_RECORD_EVENT_ID" );
+        delete_post_meta( $this->id, "ESP_RECORD_COUPON" );
+        delete_post_meta( $this->id, "ESP_RECORD_CONFIRMED" );
+        delete_post_meta( $this->id, "ESP_EB_COUPON_ID" );
+        delete_post_meta( $this->id, "ESP_EB_ORDER_ID" );
         $result = wp_delete_post( $this->id );
 
         return $result !== false && $result !== null;

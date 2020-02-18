@@ -53,13 +53,19 @@
                         <div style="width:100%;text-align:right;">
                             <a :href="modal.url" target="_blank">View full details >></a>
                         </div>
-                        <div v-if="modal.message" style="width:100%;" class="modal-message">
-                            {{modal.message}}
+                        <div v-if="modal.message" style="width:100%;" class="modal-message" v-html="modal.message">
                         </div>
                     </main>
                     <footer class="modal__footer">
-                        <button v-on:click="attendEvent" class="modal__btn modal__btn-primary">
+                        <button v-on:click="attendEvent" v-if="canAttend" class="modal__btn modal__btn-primary">
                             <span v-if="!updating">Attend This Event</span>
+                            <spinner v-if="updating"></spinner>
+                        </button>
+                        <a :href="checkoutURL + '?event_id=' + currentRecord.id + '&attendance=' + currentRecord.record_id" v-if="!canAttend && currentRecord.order_id === null" class="modal__btn modal__btn-primary">
+                            <span>Get your ticket</span>
+                        </a>
+                        <button v-on:click="leaveEvent" v-if="!canAttend" class="modal__btn modal__btn-primary">
+                            <span v-if="!updating">Leave This Event</span>
                             <spinner v-if="updating"></spinner>
                         </button>
                         <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
@@ -84,13 +90,16 @@ export default {
     data: () => ({
         extendedAttending: esp_data.attending_events,
         events: [],
+        checkoutURL : esp_data.eb_checkout_url,
         superPass: { id: null },
         startDate: '',
         customerData: esp_data.customer_data,
         currentEvent: {},
+        canAttend : true,
         modal: {
 
         },
+        currentRecord: {},
         updating: false,
     }),
     mounted() {
@@ -135,9 +144,11 @@ export default {
                 title: event.title,
                 content: event.description,
                 image: event.image,
-                url: event.url
+                url: event.url,
+                id: event.id,
             }
             this.currentEvent = event;
+            this.canAttend = this.checkCanAttendEvent();
             MicroModal.show('esp-modal');
         },
         attendEvent: function() {
@@ -159,6 +170,38 @@ export default {
                         }
                     })
             }
+        },
+        checkCanAttendEvent: function() {
+            let result = this.extendedAttending.find( (record) => {
+               return record.super_pass_id === this.superPass.id && record.id === this.modal.id;
+            });
+
+            this.currentRecord = result;
+            return result === undefined;
+        },
+        leaveEvent: function() {
+            this.updating = true;
+            let data = new FormData();
+            data.append('action', 'esp_cancel_eb_order');
+            data.append('attendance_id', this.currentRecord.record_id);
+            let ajaxurl = ajax_object.ajax_url;
+            axios
+                .post(ajaxurl, data)
+                .then(response => {
+                    this.updating = false;
+                    this.modal.message = response.data.message;
+                    this.getExtendedAttending();
+                })
+        },
+        getExtendedAttending: function(e) {
+            let data = new FormData();
+            data.append('action', 'esp_get_extended_attending');
+            let ajaxurl = ajax_object.ajax_url;
+            axios
+                .post(ajaxurl, data)
+                .then(response => {
+                    this.extendedAttending = response.data.attending_events;
+                })
         },
         changeSuperPass: function(e) {
             let id = e.target.value;
