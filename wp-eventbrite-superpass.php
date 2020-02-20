@@ -478,7 +478,6 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          * @return ESP_Customer
          */
         public function get_customer_by_id( $id ) {
-            echo $id;
             foreach ( self::$instance->customers as $customer ) {
                 if ( $customer->wp_user_id === $id ) {
                     return $customer;
