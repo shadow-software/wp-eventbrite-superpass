@@ -478,6 +478,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          * @return ESP_Customer
          */
         public function get_customer_by_id( $id ) {
+            echo $id;
             foreach ( self::$instance->customers as $customer ) {
                 if ( $customer->wp_user_id === $id ) {
                     return $customer;
@@ -486,9 +487,11 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
 
             // Customer not found, create an instance.
             $wp_user = get_user_by( "ID", $id );
-            $customer = new ESP_Customer( $wp_user->ID );
-            array_push( self::$instance->customers, $customer );
-            return $customer;
+            if( $wp_user !== false ) {
+                $customer = new ESP_Customer( $wp_user->ID );
+                array_push( self::$instance->customers, $customer );
+                return $customer;
+            }
         }
 
         /**

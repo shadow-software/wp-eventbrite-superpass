@@ -130,9 +130,12 @@ function setup_esp_customers() {
             $found = array_search( $data['product_id'], array_column( (array) $esp->super_passes, "wc_id" ) );
             if ( $found !== false ) {
                 // Order found, let's make an object instance of our ESP Customer
-                $customer = $esp->get_customer_by_id( $order->get_user_id() );
-                $esp->super_passes[$found]->gather_event_data();
-                $customer->add_super_pass( $esp->super_passes[$found] );
+                $id = $order->get_user_id();
+                if ( $id !== 0 ) {
+                    $customer = $esp->get_customer_by_id( $order->get_user_id() );
+                    $esp->super_passes[$found]->gather_event_data();
+                    $customer->add_super_pass( $esp->super_passes[$found] );
+                }
             }
         }
     }
