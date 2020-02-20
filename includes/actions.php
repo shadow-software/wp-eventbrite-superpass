@@ -7,6 +7,7 @@
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU Public License
  * @since       1.0
  */
+
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) exit;
 
@@ -182,67 +183,3 @@ function esp_get_extended_attendance_record() {
     return $events;
 }
 add_filter( 'esp_get_extended_attendance_record', 'esp_get_extended_attendance_record', 1000 );
-
-/**
- * HTML content and JS script for Eventbrite Checkout. (Taken from Eventbrite)
- *
- * @since 1.0
- * @throws Exception
- * @return void
- */
-function eventbrite_checkout_content() {
-    $page_name = get_query_var('pagename');
-    if ( $page_name === 'eventbrite-checkout' ) {
-        $attendance_id =  $_GET['attendance'];
-        $record = new ESP_Attendance_Record(null, null, null, $attendance_id);
-        // Make sure that the owner of the attendance record belongs to the current logged in user.
-        $user = wp_get_current_user();
-        if( $user->ID === (int)$record->user_id ) {
-            ?>
-            <div id="eventbrite-widget-container-<?php echo $record->event_id; ?>"></div>
-            <div id="esp-overlay" class="esp-overlay"></div>
-            <script src="https://www.eventbrite.com/static/widgets/eb_widgets.js"></script>
-
-            <script type="text/javascript">
-                var markComplete = function(obj) {
-                    var orderId = obj.orderId;
-                    var overlay = document.getElementById("esp-overlay");
-                    overlay.style.display = "block";
-                    var ajaxurl = ajax_object.ajax_url;
-                    var attendance_id = getAllUrlParams().attendance;
-                    var data = new FormData();
-                    data.append('action', 'esp_confirm_eb_order');
-                    data.append('attendance_id', attendance_id);
-                    data.append('order_id', orderId);
-
-                    axios.post(ajaxurl, data)
-                    .then(function(response) {
-                        overlay.style.display = "none";
-                        window.location.href = response.data.redirect;
-                    })
-                };
-
-                window.EBWidgets.createWidget({
-                    // Required
-                    widgetType: 'checkout',
-                    eventId: '<?php echo $record->event_id; ?>',
-                    promoCode: '<?php echo $record->coupon; ?>',
-                    iframeContainerId: 'eventbrite-widget-container-<?php echo $record->event_id; ?>',
-
-                    // Optional
-                    iframeContainerHeight: 425,  // Widget height in pixels. Defaults to a minimum of 425px if not provided
-                    onOrderComplete: markComplete  // Method called when an order has successfully completed
-                });
-            </script>
-            <?php
-        } else {
-            ?>
-            <div>
-                We're sorry, this URL is invalid.
-            </div>
-            <?php
-        }
-
-    }
-}
-add_shortcode( 'esp_eventbrite_checkout', 'eventbrite_checkout_content' );

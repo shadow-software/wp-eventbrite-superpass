@@ -62,7 +62,7 @@ function load_frontend_scripts() {
         so our dependencies need to be split up this way for now.
     */
     if( isset( $wp_query->query_vars['superpass'] ) ) {
-        wp_register_script( 'esp-frontend-scripts', $js_dir . 'bundle.js', ['axios'], ESP_VERSION, false );
+        wp_register_script( 'esp-frontend-scripts', $js_dir . 'frontEnd.js', ['axios'], ESP_VERSION, false );
         $customer = apply_filters( 'esp_get_customer_data', '' );
         $attending_events = apply_filters( 'esp_get_extended_attendance_record', '' );
         $page = get_page_by_title( 'Eventbrite Checkout', OBJECT );
@@ -76,6 +76,14 @@ function load_frontend_scripts() {
         wp_register_script( 'esp-misc-scripts', $js_dir . 'helpers.js', [], ESP_VERSION, false );
         wp_localize_script( 'esp-misc-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
         wp_enqueue_script( 'esp-misc-scripts' );
+    }
+
+    if ( isset( $wp_query->query_vars['esp-event-list'] ) ) {
+        wp_register_script( 'esp-event-list-scripts', $js_dir . 'eventListing.js', ['axios'], ESP_VERSION, false );
+        $esp = ESP();
+        $events = $esp->get_events();
+        wp_localize_script( 'esp-event-list-scripts', 'esp_data', array( 'events' => $events ) );
+        wp_enqueue_script( 'esp-event-list-script' );
     }
 }
 add_action( 'wp_enqueue_scripts', 'load_frontend_scripts' );
