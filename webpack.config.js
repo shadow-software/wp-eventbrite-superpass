@@ -2,8 +2,11 @@ const { VueLoaderPlugin } = require('vue-loader')
 var path = require('path');
 
 module.exports = {
-    mode: 'production',
-    entry: './src/main.js',
+    mode: 'development',
+    entry: {
+        frontEnd:  './src/main.js',
+        eventListing: './src/event-listing.js',
+    },
     module: {
         rules: [
             {
@@ -27,7 +30,7 @@ module.exports = {
     },
     output : {
         path : path.join(__dirname, './assets/js/'),
-        filename : 'bundle.js'
+        filename : '[name].js'
     },
     plugins: [
         new VueLoaderPlugin()

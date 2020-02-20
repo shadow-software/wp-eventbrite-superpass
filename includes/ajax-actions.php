@@ -49,6 +49,23 @@ function esp_get_super_passes() {
 add_action( 'wp_ajax_esp_get_super_passes', 'esp_get_super_passes', 10 );
 
 /**
+ * Get the Eventbrite Events associated with this account
+ *
+ * @since 1.0
+ * @return void
+ */
+function esp_get_events() {
+    if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        $esp = ESP();
+        $events = $esp->get_events();
+        header( "Content-type: application/json" );
+        echo json_encode( $events );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_get_events', 'esp_get_events', 10 );
+
+/**
  * Set Eventbrite keys and test if they are working
  *
  * @since 1.0
@@ -315,3 +332,66 @@ function esp_get_extended_attendance() {
     }
 }
 add_action( 'wp_ajax_esp_get_extended_attendance', 'esp_get_extended_attendance_record' );
+
+/**
+ * AJAX add to cart
+ *
+ * @since 1.0
+ * @return void
+ */
+function esp_add_to_cart() {
+    $result = array(
+        'success' => false,
+        'message' => ""
+    );
+
+    if ( isset( $_POST['event_id'] ) ) {
+        $item = sanitize_text_field( $_POST['event_id'] );
+        $esp = ESP();
+        $esp->cart->add_item( $item );
+
+        $result = array(
+            'success' => true,
+            'message' => "Ticket added to cart."
+        );
+
+    }
+
+    if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( 'Content-type: application/json' );
+        echo json_encode( $result );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_add_to_cart', 'esp_add_to_cart', 10 );
+
+/**
+ * AJAX remove from cart
+ *
+ * @since 1.0
+ * @return void
+ */
+function esp_remove_from_cart() {
+    $result = array(
+        'success' => false,
+        'message' => ""
+    );
+
+    if ( isset( $_POST['event_id'] ) ) {
+        $item = sanitize_text_field( $_POST['event_id'] );
+        $esp = ESP();
+        $esp->cart->remove_item( $item );
+
+        $result = array(
+            'success' => true,
+            'message' => "Ticket removed from cart."
+        );
+    }
+
+    if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( 'Content-type: application/json' );
+        echo json_encode( $result );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_remove_from_cart', 'esp_remove_from_cart', 10 );

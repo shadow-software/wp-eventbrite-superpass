@@ -134,6 +134,15 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
         public $eb_user;
 
         /**
+         * ESP Cart Object
+         *
+         * @access public
+         * @var ESP_Cart
+         * @since 1.0
+         */
+        public $cart;
+
+        /**
          * Main Class Instance
          *
          * Insures that only once instance of the main class exists in memory at one time.
@@ -158,6 +167,9 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
                 self::$instance->get_eventbrite_keys();
 
                 self::$instance->includes();
+
+                // Setup Objects
+                self::$instance->cart = new ESP_Cart();
                 self::$instance->eb_sdk = new ESP_Eventbrite_SDK_Wrapper();
                 if ( isset( self::$instance->token ) ) {
                     // Setup client if one time token exists.
@@ -243,9 +255,11 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
             require_once ESP_PLUGIN_DIR . 'includes/class-esp-super-pass.php';
             require_once ESP_PLUGIN_DIR . 'includes/class-esp-customer.php';
             require_once ESP_PLUGIN_DIR . 'includes/class-esp-attendance-record.php';
+            require_once ESP_PLUGIN_DIR . 'includes/class-esp-cart.php';
 
             // Misc
-            require_once  ESP_PLUGIN_DIR . 'includes/scripts.php';
+            require_once ESP_PLUGIN_DIR . 'includes/scripts.php';
+            require_once ESP_PLUGIN_DIR . 'includes/shortcodes.php';
         }
 
         /**
@@ -461,7 +475,7 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          */
         public function get_events() {
             if ( empty( self::$instance->events ) && isset ( self::$instance->eb_sdk->client ) ) {
-                self::$instance->events = self::$instance->eb_sdk->client->get('/users/me/events');
+                self::$instance->events = self::$instance->eb_sdk->client->get('/users/me/events', ['venue','ticket_availability'], ['page_size' => 200] );
                 self::$instance->events = self::$instance->events[ 'events' ];
             }
 
