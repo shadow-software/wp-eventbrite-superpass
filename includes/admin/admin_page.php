@@ -103,6 +103,7 @@ function main() {
                         <tr>
                             <th>Name</th>
                             <th>Cost</th>
+                            <th>Add-on Events</th>
                             <th>Included Events</th>
                         </tr>
                         </thead>
@@ -111,7 +112,12 @@ function main() {
                             <td>{{superpass.name}}</td>
                             <td>${{superpass.cost}}</td>
                             <td style="position: relative;">
-                                <ul>
+                                <ul v-if="superpass.add_on_events.length > 0">
+                                    <li v-for="event in superpass.add_on_events"><a v-if="event.name" :href="event.url" target="_blank">{{ event.name.text }}</a></li>
+                                </ul>
+                            </td>
+                            <td style="position: relative;">
+                                <ul v-if="superpass.events.length > 0">
                                     <li v-for="event in superpass.events"><a :href="event.url" target="_blank">{{ event.name.text }}</a></li>
                                 </ul>
                                 <div style="position: absolute;top: calc(30%);right: 20px;">
@@ -147,6 +153,14 @@ function main() {
                         <div class="row">
                             <ul class="list-group col">
                                 <button v-for="event in settings.eventbrite.events" v-on:click="toggleEvent" :value="event.id" type="button" class="list-group-item list-group-item-action" :class="{active : superPass.events.includes(event.id)}">
+                                    {{event.name.text}}
+                                </button>
+                            </ul>
+                        </div>
+                        <div class="row">
+                            <span style="width:100%;margin-top:1rem;">Add-on Events:</span>
+                            <ul class="list-group col">
+                                <button v-for="event in settings.eventbrite.events" v-on:click="toggleAddOn" :value="event.id" type="button" class="list-group-item list-group-item-action" :class="{active : superPass.add_on_events.includes(event.id)}">
                                     {{event.name.text}}
                                 </button>
                             </ul>

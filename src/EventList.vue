@@ -14,7 +14,7 @@
                                 <hr />
                                 <div v-html="event.description.html"></div>
                                 <ul>
-                                    <li>Cost: ${{event.ticket_availability.minimum_ticket_price.value}}</li>
+                                    <li>Cost: ${{event.ticket_availability.minimum_ticket_price.display}}</li>
                                     <li v-if="moment(event.start.utc, 'DD/MM/YYYY') === moment(event.end.utc, 'DD/MM/YYYY')">
                                         Time: {{moment(event.start.local, "h:mm:ss a")}} - {{moment(event.end.local, "h:mm:ss a")}}
                                     </li>
@@ -65,6 +65,8 @@
             dates: [],
             eventsByDate: {},
             currentEventID: null,
+            superPasses: esp_data.super_passes,
+            customerData: esp_data.customer,
             modal: {
                 title: "Eventbrite Checkout"
             },

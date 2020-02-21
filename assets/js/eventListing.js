@@ -18565,6 +18565,8 @@ __webpack_require__.r(__webpack_exports__);
         dates: [],
         eventsByDate: {},
         currentEventID: null,
+        superPasses: esp_data.super_passes,
+        customerData: esp_data.customer,
         modal: {
             title: "Eventbrite Checkout"
         },
@@ -18709,7 +18711,7 @@ var render = function() {
                             "Cost: $" +
                               _vm._s(
                                 event.ticket_availability.minimum_ticket_price
-                                  .value
+                                  .display
                               )
                           )
                         ]),

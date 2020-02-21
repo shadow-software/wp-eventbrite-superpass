@@ -183,3 +183,49 @@ function esp_get_extended_attendance_record() {
     return $events;
 }
 add_filter( 'esp_get_extended_attendance_record', 'esp_get_extended_attendance_record', 1000 );
+
+/**
+ * Get the events that a customer is allowed to buy tickets for.
+ *
+ * @since 1.0
+ * @return array
+ */
+function esp_get_allowed_events() {
+    $user_id = get_current_user_id();
+    $esp = ESP();
+    $esp->get_super_passes();
+    $customer = $esp->get_customer_by_id( $user_id );
+
+    $events = $esp->get_events();
+    $allowed_events = array();
+    // Just use the first super pass for now.
+    $super_pass = $esp->super_passes[0];
+    if ( isset( $super_pass->events[0] ) ) {
+        if ( ! isset( $super_pass->events[0]['id'] ) ) {
+            $super_pass->gather_event_data();
+        }
+    }
+    foreach ( $events as $key => $event ) {
+        $found = array_search( $event['id'], array_column( $super_pass->events, 'id' ) );
+
+        if( $found !== false ) {
+            unset( $event );
+        } else {
+            // Check if event is set as an add on
+            $found = array_search( $event['id'], array_column( $super_pass->add_on_events, 'id' ) );
+            if ( $found !== false ) {
+                $check = array_search( $super_pass->id, array_column( $customer->super_passes, 'id' ) );
+                if ( $check === false ) {
+                    unset( $event );
+                }
+            }
+        }
+
+        if( isset( $event ) ) {
+            $allowed_events[] = $event;
+        }
+    }
+
+    return $allowed_events;
+}
+add_filter( 'esp_get_allowed_events', 'esp_get_allowed_events', 1000 );

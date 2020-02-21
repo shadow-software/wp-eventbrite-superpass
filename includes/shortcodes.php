@@ -82,13 +82,22 @@ function event_list() {
     wp_enqueue_script('axios', 'https://unpkg.com/axios@0.19.0/dist/axios.min.js', [], '0.19.0');
     wp_register_script( 'esp-event-list-scripts', $js_dir . 'eventListing.js', ['axios'], ESP_VERSION, false );
     $esp = ESP();
-    $events = $esp->get_events();
+    $events = apply_filters( 'esp_get_allowed_events', '' );
+    $esp->get_super_passes();
+    $customer = array();
+    if ( is_user_logged_in() ) {
+        $user_id = get_current_user_id();
+        $customer = $esp->get_customer_by_id( $user_id );
+    }
+
     wp_localize_script( 'esp-event-list-scripts', 'esp_data',
         array(
             'events' => $events,
             'ajax_url' => admin_url('admin-ajax.php', ''),
             'is_logged_in' => is_user_logged_in(),
             'redirect' => get_permalink( get_option('woocommerce_myaccount_page_id') ),
+            'customer' => $customer,
+            'super_passes' => $esp->super_passes,
         )
     );
     wp_enqueue_script( 'esp-event-list-scripts' );
@@ -100,4 +109,4 @@ function event_list() {
         </div>
     <?php
 }
-add_shortcode( 'esp_event_list', 'event_list' );
+add_shortcode( 'esp_event_list', 'event_list', 1000 );
