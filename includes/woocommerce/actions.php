@@ -122,7 +122,7 @@ function setup_esp_customer() {
         return;
     }
     $orders = wc_get_orders( array(
-        'post_status' => 'wc-completed',
+        'status' => 'wc-completed',
         'customer_id' => $user_id,
     ) );
 
@@ -130,20 +130,25 @@ function setup_esp_customer() {
     $customer = null;
     $esp->get_super_passes();
     foreach( $orders as $order ) {
-        $items = $order->get_items();
-        foreach( $items as $item ) {
-            $data = $item->get_data();
-            // Compare this item's ID to our Superpass WC ID
-            $found = array_search( $data['product_id'], array_column( (array) $esp->super_passes, "wc_id" ) );
-            if ( $found !== false ) {
-                // Order found, let's make an object instance of our ESP Customer
-                $customer = $esp->get_customer_by_id( $user_id );
-                $esp->super_passes[$found]->gather_event_data();
-                $customer->add_super_pass( $esp->super_passes[$found] );
+        $status = $order->get_status();
+        if( $status === 'completed' ) {
+            $items = $order->get_items();
+            foreach ($items as $item) {
+                $data = $item->get_data();
+                // Compare this item's ID to our Superpass WC ID
+                $found = array_search($data['product_id'], array_column((array)$esp->super_passes, "wc_id"));
+                if ($found !== false) {
+                    // Order found, let's make an object instance of our ESP Customer
+                    $customer = $esp->get_customer_by_id($user_id);
+                    $esp->super_passes[$found]->gather_event_data();
+                    $customer->add_super_pass($esp->super_passes[$found]);
+                }
             }
         }
     }
 
-    $customer->gather_attendance_records();
+    if ( $customer ) {
+        $customer->gather_attendance_records();
+    }
 }
 add_action( 'woocommerce_after_register_post_type', 'setup_esp_customer' );

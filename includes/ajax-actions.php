@@ -178,6 +178,7 @@ function esp_update_super_pass() {
 
         // Remove all events for this super pass
         delete_post_meta( $super_pass->id, 'ESP_SUPER_PASS_EVENT' );
+        delete_post_meta( $super_pass->id, 'ESP_SUPER_PASS_ADDONS' );
 
         $super_pass->name = $name;
         $super_pass->cost = $cost;

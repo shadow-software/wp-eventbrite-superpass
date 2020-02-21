@@ -112,12 +112,12 @@ function main() {
                             <td>{{superpass.name}}</td>
                             <td>${{superpass.cost}}</td>
                             <td style="position: relative;">
-                                <ul>
-                                    <li v-for="event in superpass.add_on_events"><a :href="event.url" target="_blank">{{ event.name.text }}</a></li>
+                                <ul v-if="superpass.add_on_events.length > 0">
+                                    <li v-for="event in superpass.add_on_events"><a v-if="event.name" :href="event.url" target="_blank">{{ event.name.text }}</a></li>
                                 </ul>
                             </td>
                             <td style="position: relative;">
-                                <ul>
+                                <ul v-if="superpass.events.length > 0">
                                     <li v-for="event in superpass.events"><a :href="event.url" target="_blank">{{ event.name.text }}</a></li>
                                 </ul>
                                 <div style="position: absolute;top: calc(30%);right: 20px;">

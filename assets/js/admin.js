@@ -215,9 +215,11 @@ document.addEventListener('DOMContentLoaded', (e) => {
                     superPass.events = superPass.events.map(function(event) {
                         return event.id;
                     });
-                    superPass.add_on_events = superPass.add_on_events.map(function(event) {
-                        return event.id;
-                    });
+                    if (superPass.add_on_events.length > 0) {
+                        superPass.add_on_events = superPass.add_on_events.map(function(event) {
+                            return event.id;
+                        });
+                    }
                     this.superPass = superPass;
                     this.editingPass = true;
                 }
