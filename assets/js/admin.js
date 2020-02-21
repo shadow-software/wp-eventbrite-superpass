@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 name : "",
                 cost : 0.00,
                 events: [],
+                add_on_events: [],
             },
             superPassUpdating: false,
             queuedActions : 0,
@@ -35,9 +36,16 @@ document.addEventListener('DOMContentLoaded', (e) => {
         mounted: function () {
             document.getElementById('esp-admin-app').style.display = "block";
             // We're going to make 2 AJAX calls but we don't want to display anything until both are done.
+            /*
             this.queuedActions = 2;
             this.getSettings();
             this.getSuperPasses();
+            */
+
+            this.settings = esp_data.settings;
+            this.superPasses = esp_data.super_passes;
+            this.setupState();
+            this.ready = true;
         },
         methods: {
             getSettings: function() {
@@ -136,6 +144,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                   data.append('name', this.superPass.name);
                   data.append('cost', this.superPass.cost);
                   data.append('events', this.superPass.events);
+                  data.append('add_ons', this.superPass.add_on_events);
 
                   axios
                       .post(ajaxurl, data)
@@ -206,6 +215,9 @@ document.addEventListener('DOMContentLoaded', (e) => {
                     superPass.events = superPass.events.map(function(event) {
                         return event.id;
                     });
+                    superPass.add_on_events = superPass.add_on_events.map(function(event) {
+                        return event.id;
+                    });
                     this.superPass = superPass;
                     this.editingPass = true;
                 }
@@ -219,6 +231,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                   data.append('name', this.superPass.name);
                   data.append('cost', this.superPass.cost);
                   data.append('events', this.superPass.events);
+                  data.append('add_ons', this.superPass.add_on_events);
 
                   axios
                       .post(ajaxurl, data)
@@ -245,6 +258,14 @@ document.addEventListener('DOMContentLoaded', (e) => {
                     this.superPass.events.push(event_id);
                 } else {
                     this.superPass.events.splice(this.superPass.events.indexOf(event_id), 1);
+                }
+            },
+            toggleAddOn: function(e) {
+                var event_id = e.target.value;
+                if(!this.superPass.add_on_events.includes(event_id)) {
+                    this.superPass.add_on_events.push(event_id);
+                } else {
+                    this.superPass.add_on_events.splice(this.superPass.add_on_events.indexOf(event_id), 1);
                 }
             },
             superPassValid: function() {

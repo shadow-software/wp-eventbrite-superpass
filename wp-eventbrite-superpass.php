@@ -176,7 +176,6 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
                     self::$instance->eb_sdk->setup_client( self::$instance->token );
                 }
 
-                self::$instance->get_super_passes();
                 self::$instance->compile_settings();
             }
 
@@ -366,23 +365,32 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          * @return void
          */
         public function get_super_passes() {
-            $args = array(
-                'post_type' => 'ESP_SUPER_PASS',
-                'post_status' => 'draft',
-                'numberposts' => -1,
-            );
-            $results = get_posts( $args );
-            foreach ( $results as $result ) {
-                $values = get_post_meta( $result->ID );
-                $super_pass = new ESP_Super_Pass( $values[ 'ESP_SUPER_PASS_COST' ][0], $result->post_title, $result->ID );
-                $super_pass->wc_id = $values[ 'ESP_SUPER_PASS_WC_ID' ][0];
-                if ( isset( $values['ESP_SUPER_PASS_EVENT'] ) ){
-                    $events = explode( ',', $values[ 'ESP_SUPER_PASS_EVENT'][0] );
-                    foreach ( $events as $event ) {
-                        $super_pass->events[] = $event;
+            if( ! defined( 'ESP_SEARCHED_SUPERPASSES' ) ) {
+                $args = array(
+                    'post_type' => 'ESP_SUPER_PASS',
+                    'post_status' => 'draft',
+                    'numberposts' => -1,
+                );
+                $results = get_posts( $args );
+                foreach ( $results as $result ) {
+                    $values = get_post_meta( $result->ID );
+                    $super_pass = new ESP_Super_Pass( $values[ 'ESP_SUPER_PASS_COST' ][0], $result->post_title, $result->ID );
+                    $super_pass->wc_id = $values[ 'ESP_SUPER_PASS_WC_ID' ][0];
+                    if ( isset( $values['ESP_SUPER_PASS_EVENT'] ) ){
+                        $events = explode( ',', $values[ 'ESP_SUPER_PASS_EVENT'][0] );
+                        foreach ( $events as $event ) {
+                            $super_pass->events[] = $event;
+                        }
                     }
+                    if ( isset( $values['ESP_SUPER_PASS_ADDONS'] ) ){
+                        $events = explode( ',', $values[ 'ESP_SUPER_PASS_ADDONS'][0] );
+                        foreach ( $events as $event ) {
+                            $super_pass->add_on_events[] = $event;
+                        }
+                    }
+                    self::$instance->super_passes[] = $super_pass;
                 }
-                self::$instance->super_passes[] = $super_pass;
+                define( 'ESP_SEARCHED_SUPERPASSES', true );
             }
         }
 

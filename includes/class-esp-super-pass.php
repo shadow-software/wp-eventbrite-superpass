@@ -63,6 +63,14 @@ class ESP_Super_Pass {
     public $events = array();
 
     /**
+     * Array of add-on Eventbrite events (that show up on eventlisting after purchase)
+     *
+     * @var array
+     * @since 1.0
+     */
+    public $add_on_events = array();
+
+    /**
      * ESP_Super_Pass constructor.
      *
      * @param $cost
@@ -98,14 +106,16 @@ class ESP_Super_Pass {
      * Add specific event
      *
      * @param $event_id
+     * @param boolean $add_on
+     * @return boolean
      * @since 1.0
      * @access public
-     * @return boolean
      */
-    public function add_event( $event_id ) {
+    public function add_event( $event_id, $add_on = false ) {
+        $key = $add_on ? 'ESP_SUPER_PASS_ADDON' : 'ESP_SUPER_PASS_EVENT';
         array_push( $this->events, $event_id );
         // Add as meta
-        add_post_meta( $this->id, 'ESP_SUPER_PASS_EVENT', $event_id );
+        add_post_meta( $this->id, $key, $event_id );
         return true;
     }
 
@@ -113,16 +123,28 @@ class ESP_Super_Pass {
      * Remove specific event
      *
      * @param $event_id
+     * @param boolean $add_on
+     * @return boolean
      * @since 1.0
      * @access public
-     * @return boolean
      */
-    public function remove_event( $event_id ) {
-        $key = array_search( $event_id, array_column( $this->events, 'id' ) );
+    public function remove_event( $event_id, $add_on = false ) {
+        $meta_key = $add_on ? 'ESP_SUPER_PASS_ADDON' : 'ESP_SUPER_PASS_EVENT';
+        $key = null;
+        if ( $add_on ) {
+            array_search( $event_id, array_column( $this->add_on_events, 'id' ) );
+        } else {
+            array_search( $event_id, array_column( $this->events, 'id' ) );
+        }
         if ( $key ) {
             // Remove from meta
-            delete_post_meta( $this->id, "ESP_SUPER_PASS_EVENT", $event_id );
-            array_splice( $this->events, $key, 1 );
+            delete_post_meta( $this->id, $meta_key, $event_id );
+            if ( $add_on ) {
+                array_splice(  $this->add_on_events, $key, 1 );
+            } else {
+                array_splice( $this->events, $key, 1 );
+            }
+
         }
         return $key !== false;
     }
@@ -138,6 +160,16 @@ class ESP_Super_Pass {
         $esp = ESP();
         $events = $esp->get_events();
         foreach( $this->events as &$event ) {
+            if ( ! is_array( $event ) || ! is_object( $event )) {
+                foreach( $events as $event_data ) {
+                    if ( $event_data[ 'id' ] === $event ) {
+                        $event = $event_data;
+                        break;
+                    }
+                }
+            }
+        }
+        foreach( $this->add_on_events as &$event ) {
             if ( ! is_array( $event ) || ! is_object( $event )) {
                 foreach( $events as $event_data ) {
                     if ( $event_data[ 'id' ] === $event ) {
@@ -233,6 +265,7 @@ class ESP_Super_Pass {
     public function self_destruct() {
         // Remove it from esp's collection.
         $esp = ESP();
+        $esp->get_super_passes();
         foreach( $esp->super_passes as &$super_pass ) {
             if ( $super_pass->id === $this->id ) {
                 unset( $super_pass );

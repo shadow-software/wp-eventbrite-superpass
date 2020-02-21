@@ -38,6 +38,7 @@ add_action( 'wp_ajax_get_esp_settings', 'get_esp_settings', 10 );
 function esp_get_super_passes() {
     if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
         $esp = ESP();
+        $esp->get_super_passes();
         header( "Content-type: application/json" );
         foreach( $esp->super_passes as $super_pass ) {
             $super_pass->gather_event_data();
@@ -130,12 +131,18 @@ function esp_create_super_pass() {
         $cost = sanitize_text_field( $_POST[ 'cost' ] );
 
         $events = isset( $_POST['events'] ) ? (array) $_POST['events'] : array();
+        $add_ons = isset( $_POST['add_ons'] ) ? (array) $_POST['add_ons'] : array();
+        $events = array_map( 'esc_attr', $events );
         $events = array_map( 'esc_attr', $events );
         $super_pass = new ESP_Super_Pass( $cost, $name );
 
         // We want to make sure each event is existing and is okay to add.
         foreach( $events as $event ) {
             $super_pass->add_event( $event );
+        }
+
+        foreach( $add_ons as $event ) {
+            $super_pass->add_event( $event, true );
         }
 
         $esp = ESP();
@@ -164,6 +171,7 @@ function esp_update_super_pass() {
         $cost = sanitize_text_field( $_POST['cost'] );
         $name = sanitize_text_field( $_POST['name'] );
         $events = $_POST['events'];
+        $add_ons = $_POST['add_ons'];
 
         $esp = ESP();
         $super_pass = $esp->get_super_pass_by_id( $id );
@@ -174,6 +182,7 @@ function esp_update_super_pass() {
         $super_pass->name = $name;
         $super_pass->cost = $cost;
         update_post_meta( $super_pass->id, 'ESP_SUPER_PASS_EVENT', $events );
+        update_post_meta( $super_pass->id, 'ESP_SUPER_PASS_ADDONS', $add_ons );
         $updated = $super_pass->update();
         $result['success'] = $updated;
         $result['message'] = $updated ? 'Superpass successfully updated' : 'Something went wrong';

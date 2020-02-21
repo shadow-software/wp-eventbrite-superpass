@@ -103,6 +103,7 @@ function main() {
                         <tr>
                             <th>Name</th>
                             <th>Cost</th>
+                            <th>Add-on Events</th>
                             <th>Included Events</th>
                         </tr>
                         </thead>
@@ -110,6 +111,11 @@ function main() {
                         <tr v-for="superpass in superPasses">
                             <td>{{superpass.name}}</td>
                             <td>${{superpass.cost}}</td>
+                            <td style="position: relative;">
+                                <ul>
+                                    <li v-for="event in superpass.add_on_events"><a :href="event.url" target="_blank">{{ event.name.text }}</a></li>
+                                </ul>
+                            </td>
                             <td style="position: relative;">
                                 <ul>
                                     <li v-for="event in superpass.events"><a :href="event.url" target="_blank">{{ event.name.text }}</a></li>
@@ -147,6 +153,14 @@ function main() {
                         <div class="row">
                             <ul class="list-group col">
                                 <button v-for="event in settings.eventbrite.events" v-on:click="toggleEvent" :value="event.id" type="button" class="list-group-item list-group-item-action" :class="{active : superPass.events.includes(event.id)}">
+                                    {{event.name.text}}
+                                </button>
+                            </ul>
+                        </div>
+                        <div class="row">
+                            <span style="width:100%;margin-top:1rem;">Add-on Events:</span>
+                            <ul class="list-group col">
+                                <button v-for="event in settings.eventbrite.events" v-on:click="toggleAddOn" :value="event.id" type="button" class="list-group-item list-group-item-action" :class="{active : superPass.add_on_events.includes(event.id)}">
                                     {{event.name.text}}
                                 </button>
                             </ul>

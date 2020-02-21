@@ -116,12 +116,19 @@ register_deactivation_hook( ESP_PLUGIN_FILE, 'unmount_custom_wc_endpoint' );
  * @return void
  * @since 1.0
  */
-function setup_esp_customers() {
+function setup_esp_customer() {
+    $user_id = get_current_user_id();
+    if( !$user_id ) {
+        return;
+    }
     $orders = wc_get_orders( array(
         'post_status' => 'wc-completed',
+        'customer_id' => $user_id,
     ) );
 
     $esp = ESP();
+    $customer = null;
+    $esp->get_super_passes();
     foreach( $orders as $order ) {
         $items = $order->get_items();
         foreach( $items as $item ) {
@@ -130,20 +137,13 @@ function setup_esp_customers() {
             $found = array_search( $data['product_id'], array_column( (array) $esp->super_passes, "wc_id" ) );
             if ( $found !== false ) {
                 // Order found, let's make an object instance of our ESP Customer
-                $id = $order->get_user_id();
-                if ( $id !== 0 ) {
-                    $customer = $esp->get_customer_by_id( $order->get_user_id() );
-                    $esp->super_passes[$found]->gather_event_data();
-                    $customer->add_super_pass( $esp->super_passes[$found] );
-                }
+                $customer = $esp->get_customer_by_id( $user_id );
+                $esp->super_passes[$found]->gather_event_data();
+                $customer->add_super_pass( $esp->super_passes[$found] );
             }
         }
     }
 
-    // Now that we have created our customers we can generate attendance
-    foreach ( $esp->customers as $customer ) {
-        $customer->gather_attendance_records();
-    }
-
+    $customer->gather_attendance_records();
 }
-add_action( 'woocommerce_after_register_post_type', 'setup_esp_customers' );
+add_action( 'woocommerce_after_register_post_type', 'setup_esp_customer' );
