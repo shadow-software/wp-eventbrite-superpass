@@ -31,14 +31,6 @@ class ESP_Super_Pass {
     public $id;
 
     /**
-     * ID of Woocommerce Product
-     *
-     * @var int
-     * @since 1.0
-     */
-    public $wc_id;
-
-    /**
      * Cost of Super Pass
      *
      * @var decimal
@@ -55,12 +47,12 @@ class ESP_Super_Pass {
     public $name;
 
     /**
-     * Array of connected Eventbrite events
+     * The event that this conference pass is tied to
      *
      * @var array
      * @since 1.0
      */
-    public $events = array();
+    public $event;
 
     /**
      * Array of add-on Eventbrite events (that show up on eventlisting after purchase)
@@ -78,7 +70,7 @@ class ESP_Super_Pass {
      * @param int $id - If this has already been saved to the DB we don't need to setup again.
      * @since 1.0
      */
-    public function __construct( $cost, $name, $id = null) {
+    public function __construct( $cost, $name, $event, $id = null) {
         $this->cost = $cost;
         $this->name = $name;
 
@@ -94,9 +86,8 @@ class ESP_Super_Pass {
 
             // Save cost as meta data.
             add_post_meta( $this->id, 'ESP_SUPER_PASS_COST', $cost );
+            add_post_meta( $this->id, 'ESP_SUPER_PASS_EVENT', $event );
 
-            // Create a WC Product to represent this Pass
-            $this->create_super_pass_as_wc_product();
         } else {
             $this->id = $id;
         }
@@ -111,11 +102,10 @@ class ESP_Super_Pass {
      * @since 1.0
      * @access public
      */
-    public function add_event( $event_id, $add_on = false ) {
-        $key = $add_on ? 'ESP_SUPER_PASS_ADDON' : 'ESP_SUPER_PASS_EVENT';
+    public function add_add_on_event( $event_id ) {
         array_push( $this->events, $event_id );
         // Add as meta
-        add_post_meta( $this->id, $key, $event_id );
+        add_post_meta( $this->id, 'ESP_SUPER_PASS_ADDON', $event_id );
         return true;
     }
 
@@ -129,22 +119,10 @@ class ESP_Super_Pass {
      * @access public
      */
     public function remove_event( $event_id, $add_on = false ) {
-        $meta_key = $add_on ? 'ESP_SUPER_PASS_ADDON' : 'ESP_SUPER_PASS_EVENT';
-        $key = null;
-        if ( $add_on ) {
-            array_search( $event_id, array_column( $this->add_on_events, 'id' ) );
-        } else {
-            array_search( $event_id, array_column( $this->events, 'id' ) );
-        }
+        $key = array_search( $event_id, array_column( $this->add_on_events, 'id' ) );
         if ( $key ) {
-            // Remove from meta
-            delete_post_meta( $this->id, $meta_key, $event_id );
-            if ( $add_on ) {
-                array_splice(  $this->add_on_events, $key, 1 );
-            } else {
-                array_splice( $this->events, $key, 1 );
-            }
-
+            delete_post_meta($this->id, 'ESP_SUPER_PASS_ADDON', $event_id);
+            array_splice($this->add_on_events, $key, 1);
         }
         return $key !== false;
     }
@@ -159,16 +137,6 @@ class ESP_Super_Pass {
     public function gather_event_data() {
         $esp = ESP();
         $events = $esp->get_events();
-        foreach( $this->events as &$event ) {
-            if ( ! is_array( $event ) || ! is_object( $event )) {
-                foreach( $events as $event_data ) {
-                    if ( $event_data[ 'id' ] === $event ) {
-                        $event = $event_data;
-                        break;
-                    }
-                }
-            }
-        }
         foreach( $this->add_on_events as &$event ) {
             if ( ! is_array( $event ) || ! is_object( $event )) {
                 foreach( $events as $event_data ) {
@@ -179,61 +147,6 @@ class ESP_Super_Pass {
                 }
             }
         }
-    }
-
-    /**
-     * Create a product in Woocommerce to represent our super pass.
-     *
-     * @since 1.0
-     * @access public
-     * @return void
-     */
-    public function create_super_pass_as_wc_product() {
-        $will_manage_stock  = false;
-        $is_virtual         = true;
-        $price              = $this->cost;
-        $product            = new \WC_Product();
-        $image_id           = 0; // Attachment ID
-        $product->set_props( array(
-            'name'               => $this->name,
-            'featured'           => false,
-            'catalog_visibility' => 'visible',
-            'description'        => 'My awesome product description',
-            'short_description'  => 'My short description',
-            'sku'                => sanitize_title( $this->name ) . '-' . rand(0, 100),
-            'regular_price'      => $price,
-            'sale_price'         => '',
-            'date_on_sale_from'  => '',
-            'date_on_sale_to'    => '',
-            'total_sales'        => 0,
-            'tax_status'         => 'taxable',
-            'tax_class'          => '',
-            'manage_stock'       => $will_manage_stock,
-            'stock_quantity'     => $will_manage_stock ? 100 : null, // Stock quantity or null
-            'stock_status'       => 'instock',
-            'backorders'         => 'no',
-            'sold_individually'  => true,
-            'weight'             => $is_virtual ? '' : 15,
-            'length'             => $is_virtual ? '' : 15,
-            'width'              => $is_virtual ? '' : 15,
-            'height'             => $is_virtual ? '' : 15,
-            'upsell_ids'         => '',
-            'cross_sell_ids'     => '',
-            'parent_id'          => 0,
-            'reviews_allowed'    => true,
-            'purchase_note'      => '',
-            'menu_order'         => 10,
-            'virtual'            => $is_virtual,
-            'downloadable'       => false,
-            'category_ids'       => '',
-            'tag_ids'            => '',
-            'shipping_class_id'  => 0,
-            'image_id'           => $image_id,
-        ) );
-
-        $product->save();
-        $this->wc_id = $product->get_id();
-        update_post_meta( $this->id, 'ESP_SUPER_PASS_WC_ID', $this->wc_id );
     }
 
     /**
@@ -273,9 +186,7 @@ class ESP_Super_Pass {
         }
         // Remove from DB
         $result = wp_delete_post( $this->id );
-        // Remove WC Product
-        $wc_result = wp_delete_post( $this->wc_id );
 
-        return ( $result !== false && $result !== null) && ( $wc_result !== false && $wc_result !== null );
+        return $result !== false && $result !== null;
     }
 }
