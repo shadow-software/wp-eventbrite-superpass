@@ -1,32 +1,48 @@
 <template>
     <div>
+        <section v-if="showSuperPassPrompt" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
+                 style="background-color:#212944;">
+            <div class="port">
+                <div class="boldCell">
+                    <div class="boldCellInner">
+                        <div class="boldRow ">
+                            <div class="boldRowInner">
+                                <div class="rowItem col-md-12 col-ms-12  btTextCenter inherit" data-width="12">
+                                    <div class="rowItemContent">
+                                        <div class="btText"><h4 style="text-align: center;">Ready to plan your
+                                            conference agenda?</h4>
+                                        </div>
+                                        <a href="/my-account/superpass"
+                                           class="btBtn btBtn btnOutlineStyle btnAccentColor btnSmall btnNormalWidth btnRightPosition btnIco"><span
+                                                class="btnInnerText">Plan your agenda</span><span class="btIco "><span
+                                                data-ico-fa="" class="btIcoHolder"></span></span></a></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
         <div class="btTabs tabsVertical" data-open-first="yes" data-open-one="no">
             <ul class="tabsHeader">
                 <li v-for="date in dates"><span>{{date}}</span></li>
             </ul>
             <div class="tabPanes accordionPanes">
                 <div class="tabPane" v-for="events in eventsByDate">
-                    <div class="tabAccordionTitle"><span>{{moment(events[0].start.utc, "dddd MMMM Do")}}</span></div>
+                    <div class="tabAccordionTitle on"><span>{{moment(events[0].start.utc, "dddd MMMM Do")}}</span></div>
                     <div class="tabAccordionContent" style="display: block;">
                         <div v-for="event in events">
                             <div>
                                 {{event.name.text}}
-                                <hr />
+                                <hr/>
                                 <div v-html="event.description.html"></div>
-                                <ul>
-                                    <li>Cost: ${{event.ticket_availability.minimum_ticket_price.display}}</li>
-                                    <li v-if="moment(event.start.utc, 'DD/MM/YYYY') === moment(event.end.utc, 'DD/MM/YYYY')">
-                                        Time: {{moment(event.start.local, "h:mm:ss a")}} - {{moment(event.end.local, "h:mm:ss a")}}
-                                    </li>
-                                    <li>Capacity: {{event.capacity}}</li>
-                                    <li v-if="event.venue">Location: {{event.venue.address.localized_area_display}}</li>
-                                </ul>
                                 <div>
-                                    <div v-on:click="showModal(event.id)" class="woocommerce-button button">
-                                        Buy Tickets
+                                    <div v-if="event.status === 'live'" v-on:click="showModal(event.id)"
+                                         class="btBtn btBtn btnFilledStyle btnAccentColor btnSmall btnNormalWidth btnRightPosition btnNoIcon">
+                                        <span class="btnInnerText">Buy Tickets</span>
                                     </div>
                                 </div>
-                                <br />
+                                <br/>
                             </div>
                         </div>
                     </div>
@@ -67,6 +83,7 @@
             currentEventID: null,
             superPasses: esp_data.super_passes,
             customerData: esp_data.customer,
+            showSuperPassPrompt: false,
             modal: {
                 title: "Eventbrite Checkout"
             },
@@ -86,27 +103,35 @@
             });
             this.events.forEach(event => {
                 let eDate = moment(event.start.utc).format("dddd MMMM Do");
-                if ( ! this.eventsByDate[eDate] ){
+                if (!this.eventsByDate[eDate]) {
                     this.eventsByDate[eDate] = [];
                 }
                 this.eventsByDate[eDate].push(event);
 
                 let found = this.dates.find(date => {
                     return eDate === date;
-                })
+                });
 
                 if (!found) {
                     let date = moment(event.start.utc).format("dddd MMMM Do");
                     this.dates.push(date);
                 }
             });
+
+            if (this.customerData.super_passes.length > 0) {
+                let e = document.querySelector('#super-pass-purchase-prompt');
+                if (e) {
+                    e.style.display = "none";
+                    this.showSuperPassPrompt = true;
+                }
+            }
         },
         methods: {
-            moment: function(date, format) {
+            moment: function (date, format) {
                 return moment(date).format(format);
             },
-            showModal: function(eventID) {
-                if ( esp_data.is_logged_in ) {
+            showModal: function (eventID) {
+                if (esp_data.is_logged_in) {
                     this.currentEventID = eventID;
                     this.initEBWidget();
                     MicroModal.show('esp-modal');
@@ -114,7 +139,7 @@
                     window.location.href = esp_data.redirect;
                 }
             },
-            initEBWidget: function() {
+            initEBWidget: function () {
                 // First clear all existing widgets.
                 let e = document.querySelector("#eventbrite-widget-container");
                 let child = e.lastElementChild;
@@ -130,7 +155,9 @@
 
                     // Optional
                     iframeContainerHeight: 425,  // Widget height in pixels. Defaults to a minimum of 425px if not provided
-                    onOrderComplete: function(e){ console.log(e) }  // Method called when an order has successfully completed
+                    onOrderComplete: function (e) {
+                        console.log(e)
+                    }  // Method called when an order has successfully completed
                 });
             }
         }

@@ -176,3 +176,7 @@
     max-width: unset !important;
     max-height: unset !important;
 }
+
+#eventbrite-widget-container > iframe {
+    height: 100% !important;
+}

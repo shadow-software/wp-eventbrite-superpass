@@ -193,10 +193,9 @@ add_filter( 'esp_get_extended_attendance_record', 'esp_get_extended_attendance_r
 function esp_get_allowed_events() {
     $user_id = get_current_user_id();
     $esp = ESP();
+    $events = $esp->get_events( true );
     $esp->get_super_passes();
-    $customer = $esp->get_customer_by_id( $user_id );
-
-    $events = $esp->get_events();
+    $customer = $user_id !== 0 ? $esp->get_customer_by_id( $user_id ) : null;
     $allowed_events = array();
     // Just use the first super pass for now.
     $super_pass = $esp->super_passes[0];
@@ -214,10 +213,15 @@ function esp_get_allowed_events() {
             // Check if event is set as an add on
             $found = array_search( $event['id'], array_column( $super_pass->add_on_events, 'id' ) );
             if ( $found !== false ) {
-                $check = array_search( $super_pass->id, array_column( $customer->super_passes, 'id' ) );
-                if ( $check === false ) {
+                if ( $customer !== null ) {
+                    $check = array_search( $super_pass->id, array_column( $customer->super_passes, 'id' ) );
+                    if ( $check === false ) {
+                        unset( $event );
+                    }
+                } else {
                     unset( $event );
                 }
+
             }
         }
 

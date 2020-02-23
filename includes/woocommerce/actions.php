@@ -152,3 +152,23 @@ function setup_esp_customer() {
     }
 }
 add_action( 'woocommerce_after_register_post_type', 'setup_esp_customer' );
+
+/**
+ * Redirect after purchase
+ *
+ * @return void
+ * @since 1.0
+ */
+function esp_wc_redirect() {
+    global $wp;
+
+    if ( is_checkout() && ! empty( $wp->query_vars['order-received'] ) ) {
+
+        $redirect_url = get_site_url(null, '/schedule/', 'https');
+
+        wp_redirect($redirect_url);
+
+        exit;
+    }
+}
+add_action( 'template_redirect', 'esp_wc_redirect' );

@@ -104,9 +104,11 @@ function event_list() {
     wp_enqueue_style( 'extra', $css_dir . 'extra.css' );
     wp_enqueue_script('eb_widgets', "https://www.eventbrite.com/static/widgets/eb_widgets.js");
 
+    ob_start();
     ?>
         <div id="esp-event-list">
         </div>
     <?php
+    return ob_get_clean();
 }
 add_shortcode( 'esp_event_list', 'event_list', 1000 );

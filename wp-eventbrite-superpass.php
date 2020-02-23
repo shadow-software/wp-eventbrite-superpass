@@ -478,13 +478,34 @@ if ( ! class_exists( 'WP_Eventbrite_Superpass' ) ) :
          * needed, doing so every time will lead to performance issues.
          *
          * @access public
-         * @since 1.0
+         * @param bool $full_description
          * @return array
+         * @since 1.0
          */
-        public function get_events() {
+        public function get_events( $full_description = false ) {
             if ( empty( self::$instance->events ) && isset ( self::$instance->eb_sdk->client ) ) {
                 self::$instance->events = self::$instance->eb_sdk->client->get('/users/me/events', ['venue','ticket_availability'], ['page_size' => 200] );
                 self::$instance->events = self::$instance->events[ 'events' ];
+            }
+
+            if ( $full_description ) {
+                $batch_request = [];
+                foreach ( self::$instance->events as $event ) {
+                    $batch = array(
+                        "method" => "GET",
+                        "relative_url" => "events/{$event['id']}/description"
+                    );
+                    $batch_request[] = (object) $batch;
+                }
+                $result = self::$instance->eb_sdk->client->post('/batch/', array( 'batch' => json_encode($batch_request) ));
+                $i = 0;
+                foreach( $result as $data ) {
+                    if ( isset($data['code']) && $data['code'] === 200 ) {
+                        $body = json_decode($data['body']);
+                        self::$instance->events[$i]['description']['html'] = $body->description;
+                    }
+                    $i ++;
+                }
             }
 
             return self::$instance->events;
