@@ -1,6 +1,6 @@
 <template>
     <div>
-        <section v-if="showSuperPassPrompt" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
+        <section v-if="purchasedPass" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
                  style="background-color:#212944;">
             <div class="port">
                 <div class="boldCell">
@@ -12,10 +12,62 @@
                                         <div class="btText"><h4 style="text-align: center;">Ready to plan your
                                             conference agenda?</h4>
                                         </div>
-                                        <a href="/my-account/superpass"
+                                        <a href="/my-account/manage-agenda"
                                            class="btBtn btBtn btnOutlineStyle btnAccentColor btnSmall btnNormalWidth btnRightPosition btnIco"><span
                                                 class="btnInnerText">Plan your agenda</span><span class="btIco "><span
                                                 data-ico-fa="" class="btIcoHolder"></span></span></a></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <div class="btTabs tabsVertical" data-open-first="yes" data-open-one="no">
+            <ul class="tabsHeader">
+                <li>
+                    <span>{{moment(superPass.event.start.utc, "dddd MMMM Do YYYY")}}</span>
+                </li>
+            </ul>
+            <div class="tabPanes accordionPanes">
+                <div class="tabPane">
+                    <div class="tabAccordionTitle on"><span>{{moment(superPass.event.start.utc, "dddd MMMM Do YYYY")}} <b>{{superPass.event.name.text}}</b></span></div>
+                    <div class="tabAccordionContent" style="display: block;">
+                        <div>
+                            <div>
+                                {{superPass.event.name.text}}
+                                <hr/>
+                                <div v-html="superPass.event.description.html"></div>
+                                <div>
+                                    <div v-if="canPurchase(superPass.event.id)" v-on:click="showModal(superPass.event.id)"
+                                         class="btBtn btBtn btnFilledStyle btnAccentColor btnSmall btnNormalWidth btnRightPosition btnNoIcon">
+                                        <span class="btnInnerText">Buy Tickets</span>
+                                    </div>
+                                    <div v-else>
+                                        <span class="btnInnerText">Ticket Purchased</span>
+                                    </div>
+                                </div>
+                                <br/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <section v-if="!purchasedPass" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
+                 style="background-color:#212944;">
+            <div class="port">
+                <div class="boldCell">
+                    <div class="boldCellInner">
+                        <div class="boldRow ">
+                            <div class="boldRowInner">
+                                <div class="rowItem col-md-12 col-ms-12  btTextCenter inherit" data-width="12">
+                                    <div class="rowItemContent">
+                                        <div class="btText">
+                                            <h4 style="text-align: center;">
+                                                Purchase your Conference ticket to gain access to the following add-on events!
+                                            </h4>
+                                        </div></div>
                                 </div>
                             </div>
                         </div>
@@ -29,7 +81,7 @@
             </ul>
             <div class="tabPanes accordionPanes">
                 <div class="tabPane" v-for="events in eventsByDate">
-                    <div class="tabAccordionTitle on"><span>{{moment(events[0].start.utc, "dddd MMMM Do")}}</span></div>
+                    <div class="tabAccordionTitle on"><span>{{moment(events[0].start.utc, "dddd MMMM Do YYYY")}}</span></div>
                     <div class="tabAccordionContent" style="display: block;">
                         <div v-for="event in events">
                             <div>
@@ -37,9 +89,12 @@
                                 <hr/>
                                 <div v-html="event.description.html"></div>
                                 <div>
-                                    <div v-if="event.status === 'live'" v-on:click="showModal(event.id)"
+                                    <div v-if="event.status === 'live' && canPurchase(event.id) && purchasedPass" v-on:click="showModal(event.id)"
                                          class="btBtn btBtn btnFilledStyle btnAccentColor btnSmall btnNormalWidth btnRightPosition btnNoIcon">
                                         <span class="btnInnerText">Buy Tickets</span>
+                                    </div>
+                                    <div v-else-if="!canPurchase(event.id) && purchasedPass">
+                                        <span class="btnInnerText">Ticket Purchased</span>
                                     </div>
                                 </div>
                                 <br/>
@@ -77,11 +132,12 @@
     export default {
         name: "EventList",
         data: () => ({
-            events: esp_data.events,
+            events: esp_data.super_pass.add_on_events,
             dates: [],
             eventsByDate: {},
             currentEventID: null,
-            superPasses: esp_data.super_passes,
+            lastCompleted: null,
+            superPass: esp_data.super_pass,
             customerData: esp_data.customer,
             showSuperPassPrompt: false,
             modal: {
@@ -102,7 +158,7 @@
                 debugMode: true // [9]
             });
             this.events.forEach(event => {
-                let eDate = moment(event.start.utc).format("dddd MMMM Do");
+                let eDate = moment(event.start.utc).format("dddd MMMM Do YYYY");
                 if (!this.eventsByDate[eDate]) {
                     this.eventsByDate[eDate] = [];
                 }
@@ -118,7 +174,7 @@
                 }
             });
 
-            if (this.customerData.super_passes.length > 0) {
+            if (/*this.customerData.super_passes.length > 0*/ true) {
                 let e = document.querySelector('#super-pass-purchase-prompt');
                 if (e) {
                     e.style.display = "none";
@@ -136,8 +192,35 @@
                     this.initEBWidget();
                     MicroModal.show('esp-modal');
                 } else {
-                    window.location.href = esp_data.redirect;
+                    window.location.href = esp_data.redirect + '?register';
                 }
+            },
+            registerOrder: function ( order_id ) {
+                let data = new FormData();
+                data.append('action', 'esp_register_eb_order');
+                data.append('event_id', this.lastCompleted);
+                data.append('order_id', order_id);
+
+                let ajaxurl = esp_data.ajax_url;
+
+                axios
+                    .post(ajaxurl, data)
+                    .then( response => {
+                       this.customerData = response.data.customer;
+                    });
+            },
+            purchasedPass: function(){
+                purchasedPass = this.customerData.eventbrite_orders.find( obj => {
+                    return obj.event_id[0] === this.superPass.event.id;
+                });
+                return purchasedPass !== undefined;
+            },
+            canPurchase: function(event_id) {
+                let alreadyPurchased = this.customerData.eventbrite_orders.find( obj => {
+                    return obj.event_id[0] === event_id;
+                })
+
+                return alreadyPurchased === undefined;
             },
             initEBWidget: function () {
                 // First clear all existing widgets.
@@ -147,6 +230,7 @@
                     e.removeChild(child);
                     child = e.lastElementChild;
                 }
+                this.lastCompleted = this.currentEventID;
                 this.EBWidget = window.EBWidgets.createWidget({
                     // Required
                     widgetType: 'checkout',
@@ -155,9 +239,9 @@
 
                     // Optional
                     iframeContainerHeight: 425,  // Widget height in pixels. Defaults to a minimum of 425px if not provided
-                    onOrderComplete: function (e) {
-                        console.log(e)
-                    }  // Method called when an order has successfully completed
+                    onOrderComplete: function (obj) {
+                        this.registerOrder(obj.orderId);
+                    }.bind(this)  // Method called when an order has successfully completed
                 });
             }
         }

@@ -2,7 +2,7 @@ const { VueLoaderPlugin } = require('vue-loader')
 var path = require('path');
 
 module.exports = {
-    mode: 'production',
+    mode: 'development',
     entry: {
         frontEnd:  './src/main.js',
         eventListing: './src/event-listing.js',

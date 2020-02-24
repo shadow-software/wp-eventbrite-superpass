@@ -126,23 +126,20 @@ function esp_create_super_pass() {
         "message" => "",
     );
 
-    if ( ! empty( $_POST[ 'name' ] && ! empty( $_POST[ 'cost' ] ) && ! empty( $_POST[ 'events' ] ) ) ) {
+    if ( ! empty( $_POST[ 'name' ] && ! empty( $_POST[ 'cost' ] ) && ! empty( $_POST[ 'event' ] ) ) ) {
         $name = sanitize_text_field( $_POST[ 'name' ] );
         $cost = sanitize_text_field( $_POST[ 'cost' ] );
+        $event = sanitize_text_field( $_POST[ 'event' ] );
 
-        $events = isset( $_POST['events'] ) ? (array) $_POST['events'] : array();
         $add_ons = isset( $_POST['add_ons'] ) ? (array) $_POST['add_ons'] : array();
-        $events = array_map( 'esc_attr', $events );
-        $events = array_map( 'esc_attr', $events );
-        $super_pass = new ESP_Super_Pass( $cost, $name );
+        $add_ons = array_map( 'esc_attr', $add_ons );
+
+        $super_pass = new ESP_Super_Pass( $cost, $name, $event );
 
         // We want to make sure each event is existing and is okay to add.
-        foreach( $events as $event ) {
-            $super_pass->add_event( $event );
-        }
 
         foreach( $add_ons as $event ) {
-            $super_pass->add_event( $event, true );
+            $super_pass->add_event( $event );
         }
 
         $esp = ESP();
@@ -166,14 +163,15 @@ function esp_update_super_pass() {
         'success' => false,
     );
 
-    if ( isset( $_POST['id'] ) && isset( $_POST['cost'] ) && isset( $_POST['name'] ) && isset( $_POST['events'] ) ) {
+    if ( isset( $_POST['id'] ) && isset( $_POST['cost'] ) && isset( $_POST['name'] ) && isset( $_POST['event'] ) ) {
         $id = sanitize_text_field( $_POST['id'] );
         $cost = sanitize_text_field( $_POST['cost'] );
         $name = sanitize_text_field( $_POST['name'] );
-        $events = $_POST['events'];
+        $event = sanitize_text_field( $_POST['event'] );
         $add_ons = $_POST['add_ons'];
 
         $esp = ESP();
+        $esp->get_super_passes();
         $super_pass = $esp->get_super_pass_by_id( $id );
 
         // Remove all events for this super pass
@@ -182,8 +180,9 @@ function esp_update_super_pass() {
 
         $super_pass->name = $name;
         $super_pass->cost = $cost;
-        update_post_meta( $super_pass->id, 'ESP_SUPER_PASS_EVENT', $events );
-        update_post_meta( $super_pass->id, 'ESP_SUPER_PASS_ADDONS', $add_ons );
+        $super_pass->event = $event;
+
+        update_post_meta( $super_pass->id, 'ESP_SUPER_PASS_ADDON', $add_ons );
         $updated = $super_pass->update();
         $result['success'] = $updated;
         $result['message'] = $updated ? 'Superpass successfully updated' : 'Something went wrong';
@@ -231,6 +230,7 @@ function esp_customer_attend_event() {
         'message' => ""
     );
 
+    /*
     if ( isset( $_POST['event_id'] ) && isset( $_POST['super_pass_id']) ) {
         $esp = ESP();
         $id = get_current_user_id();
@@ -251,6 +251,7 @@ function esp_customer_attend_event() {
             }
         }
     }
+    */
 
     if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
         header( "Content-type: application/json" );
@@ -265,7 +266,7 @@ function esp_confirm_eb_order() {
         'success' => false,
         'message' => ''
     );
-
+    /*
     if( isset( $_POST['attendance_id'] )) {
         $attendance_id = $_POST['attendance_id'];
         $order_id = $_POST['order_id'];
@@ -277,7 +278,7 @@ function esp_confirm_eb_order() {
             $result['redirect'] = get_site_url( null, '/my-account/superpass' );
         }
     }
-
+    */
     if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
         header( 'Content-type: application/json' );
         echo json_encode( $result );
@@ -292,6 +293,7 @@ function esp_cancel_eb_order() {
         'success' => false,
         'message' => "Something went wrong. Please try again."
     ];
+    /*
     $current_user_id = get_current_user_id();
     $customer = $esp->get_customer_by_id( $current_user_id );
     $attendance_id = $_POST['attendance_id'];
@@ -323,7 +325,7 @@ function esp_cancel_eb_order() {
             }
         }
     }
-
+    */
     if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
         header( 'Content-type: application/json' );
         echo json_encode( $result );
@@ -344,27 +346,26 @@ function esp_get_extended_attendance() {
 add_action( 'wp_ajax_esp_get_extended_attendance', 'esp_get_extended_attendance_record' );
 
 /**
- * AJAX add to cart
+ * Register an eventbrite order after checkout
  *
  * @since 1.0
  * @return void
  */
-function esp_add_to_cart() {
+function esp_register_eb_order() {
     $result = array(
         'success' => false,
-        'message' => ""
+        'message' => ''
     );
 
-    if ( isset( $_POST['event_id'] ) ) {
-        $item = sanitize_text_field( $_POST['event_id'] );
-        $esp = ESP();
-        $esp->cart->add_item( $item );
+    $user_id = get_current_user_id();
+    if ( $user_id !== 0  && $_POST['event_id'] && $_POST['order_id'] ) {
+        $customer = new ESP_Customer( $user_id );
+        $order_id = sanitize_text_field( $_POST['order_id'] );
+        $event_id = sanitize_text_field( $_POST['event_id'] );
 
-        $result = array(
-            'success' => true,
-            'message' => "Ticket added to cart."
-        );
-
+        $result['success'] = $customer->register_eb_order( $order_id, $event_id );
+        $customer->get_eb_orders();
+        $result['customer'] = $customer;
     }
 
     if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
@@ -373,35 +374,4 @@ function esp_add_to_cart() {
         wp_die();
     }
 }
-add_action( 'wp_ajax_esp_add_to_cart', 'esp_add_to_cart', 10 );
-
-/**
- * AJAX remove from cart
- *
- * @since 1.0
- * @return void
- */
-function esp_remove_from_cart() {
-    $result = array(
-        'success' => false,
-        'message' => ""
-    );
-
-    if ( isset( $_POST['event_id'] ) ) {
-        $item = sanitize_text_field( $_POST['event_id'] );
-        $esp = ESP();
-        $esp->cart->remove_item( $item );
-
-        $result = array(
-            'success' => true,
-            'message' => "Ticket removed from cart."
-        );
-    }
-
-    if( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-        header( 'Content-type: application/json' );
-        echo json_encode( $result );
-        wp_die();
-    }
-}
-add_action( 'wp_ajax_esp_remove_from_cart', 'esp_remove_from_cart', 10 );
+add_action( 'wp_ajax_esp_register_eb_order', 'esp_register_eb_order' );

@@ -104,7 +104,7 @@ function main() {
                             <th>Name</th>
                             <th>Cost</th>
                             <th>Add-on Events</th>
-                            <th>Included Events</th>
+                            <th>Main Event</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -117,9 +117,7 @@ function main() {
                                 </ul>
                             </td>
                             <td style="position: relative;">
-                                <ul v-if="superpass.events.length > 0">
-                                    <li v-for="event in superpass.events"><a :href="event.url" target="_blank">{{ event.name.text }}</a></li>
-                                </ul>
+                                <span v-if="superpass.event"><a :href="superpass.event.url" target="_blank">{{superpass.event.name.text}}</a></span>
                                 <div style="position: absolute;top: calc(30%);right: 20px;">
                                     <button v-on:click="editSuperPass" :value="superpass.id" class="btn btn-primary text-white">EDIT</button>
                                 </div>
@@ -152,9 +150,10 @@ function main() {
                         </div>
                         <div class="row">
                             <ul class="list-group col">
-                                <button v-for="event in settings.eventbrite.events" v-on:click="toggleEvent" :value="event.id" type="button" class="list-group-item list-group-item-action" :class="{active : superPass.events.includes(event.id)}">
-                                    {{event.name.text}}
-                                </button>
+                                <span>Select the main event:</span>
+                                <select v-model="superPass.event" type="button" class="list-group-item list-group-item-action">
+                                    <option v-for="event in settings.eventbrite.events" :value="event.id">{{event.name.text}}</option>
+                                </select>
                             </ul>
                         </div>
                         <div class="row">

@@ -31,13 +31,13 @@ class ESP_Customer {
     public $wp_user_id;
 
     /**
-     * Event Passes purchased
+     * Eventbrite Orders
      *
      * @since 1.0
      * @access public
      * @var array
      */
-    public $super_passes = array();
+    public $eventbrite_orders = array();
 
     /**
      * A record of which events a user is attending and what pass they are using to attend
@@ -99,6 +99,63 @@ class ESP_Customer {
     public function add_super_pass( $super_pass ) {
         array_push( $this->super_passes, $super_pass );
     }
+
+    /**
+     * Get Eventbrite orders
+     *
+     * @since 1.0
+     * @access public
+     */
+    public function get_eb_orders() {
+        $args = array(
+            'post_type' => 'eb_orders',
+            'numberposts' => -1,
+            'metaquery' => array(
+                array(
+                    'key' => 'user',
+                    'value' => $this->wp_user_id,
+                    'compare' => '=',
+                )
+            )
+        );
+
+        $posts = get_posts( $args );
+
+        foreach( $posts as $post ) {
+            $this->eventbrite_orders[] = get_post_meta( $post->ID );
+        }
+    }
+
+    /**
+     * Add eventbrite order
+     *
+     * @param $order_id
+     * @param $event_id
+     * @return bool
+     */
+    public function register_eb_order( $order_id, $event_id ) {
+        $esp = ESP();
+        $event = $esp->get_event_by_id( $event_id );
+        $user = get_user_by( 'ID', $this->wp_user_id );
+        $user_info = get_userdata( $this->wp_user_id );
+        $postarr = [
+            'post_title' => "{$user->first_name} {$user->last_name} {$user_info->user_email} - {$event->name->text}",
+            'post_type' => 'eb_orders',
+            'post_content' => '',
+            'post_status' => 'publish',
+        ];
+
+        $post_id = wp_insert_post( $postarr );
+
+        if ( $post_id !== 0 && !is_wp_error( $post_id ) ) {
+            add_post_meta( $post_id, 'event_id', $event_id );
+            add_post_meta( $post_id, 'order_id', $order_id );
+            add_post_meta( $post_id, 'user', $this->wp_user_id );
+        }
+
+        return $post_id !== 0 && !is_wp_error( $post_id );
+    }
+
 
     /**
      * Create an attendance record for this user

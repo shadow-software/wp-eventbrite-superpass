@@ -40,27 +40,6 @@ function dependency_notice(){
     ?><div class="error"><p>Sorry, WP Eventbrite Superpass requires Woocommerce in order to be used.</p></div><?php
 }
 
-/**
- * Create Page for Eventbrite Checkout
- *
- * @since 1.0
- * @return void
- */
-function create_eb_page() {
-    $post = get_page_by_title( 'Eventbrite Checkout', OBJECT, 'page' );
-
-    if ( ! $post ) {
-        $postarr = [
-            'post_title' => 'Eventbrite Checkout',
-            'post_type' => 'page',
-            'post_content' => '<!-- wp:shortcode -->[esp_eventbrite_checkout]<!-- /wp:shortcode -->',
-            'post_status' =>'publish',
-        ];
-
-        wp_insert_post( $postarr );
-    }
-}
-register_activation_hook( ESP_PLUGIN_FILE, 'create_eb_page' );
 
 /**
  * Remove Eventbrite page on plugin deactivation
@@ -73,24 +52,6 @@ function remove_eb_page() {
     wp_delete_post( $post->ID );
 }
 register_deactivation_hook( ESP_PLUGIN_FILE, 'remove_eb_page' );
-
-/**
- * Get the ESP customer for the current user
- *
- * @since 1.0
- * @return bool|ESP_Customer
- */
-function esp_get_customer_data() {
-    $id = get_current_user_id();
-    if ( $id ) {
-        $esp = ESP();
-        return $esp->get_customer_by_id( $id );
-    } else {
-        return false;
-    }
-
-}
-add_filter( 'esp_get_customer_data', 'esp_get_customer_data', 1000 );
 
 /**
  * Check if the customer has any attending events that conflict with the event requested
@@ -142,6 +103,7 @@ add_filter( 'esp_can_customer_attend', 'esp_can_customer_attend', 10, 3 );
  * @since 1.0
  * @return array
  */
+/*
 function esp_get_extended_attendance_record() {
     $user_id = get_current_user_id();
     $esp = ESP();
@@ -183,6 +145,7 @@ function esp_get_extended_attendance_record() {
     return $events;
 }
 add_filter( 'esp_get_extended_attendance_record', 'esp_get_extended_attendance_record', 1000 );
+*/
 
 /**
  * Get the events that a customer is allowed to buy tickets for.
@@ -190,8 +153,9 @@ add_filter( 'esp_get_extended_attendance_record', 'esp_get_extended_attendance_r
  * @since 1.0
  * @return array
  */
+/*
 function esp_get_allowed_events() {
-    $user_id = get_current_user_id();
+    //$user_id = get_current_user_id();
     $esp = ESP();
     $events = $esp->get_events( true );
     $esp->get_super_passes();
@@ -233,3 +197,4 @@ function esp_get_allowed_events() {
     return $allowed_events;
 }
 add_filter( 'esp_get_allowed_events', 'esp_get_allowed_events', 1000 );
+*/

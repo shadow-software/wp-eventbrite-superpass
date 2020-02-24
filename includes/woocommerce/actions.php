@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * @return void
  */
 function add_wc_endpoint() {
-    add_rewrite_endpoint( 'superpass', EP_ROOT | EP_PAGES );
+    add_rewrite_endpoint( 'manage-agenda', EP_ROOT | EP_PAGES );
 }
 
 /**
@@ -29,7 +29,7 @@ function add_wc_endpoint() {
  * @return array
  */
 function add_query_vars( $vars ) {
-    $vars[] = 'superpass';
+    $vars[] = 'manage-agenda';
 
     return $vars;
 }
@@ -41,7 +41,7 @@ function add_query_vars( $vars ) {
  * @return mixed
  */
 function wc_endpoint_title() {
-    return __( 'Eventbrite Super Passes', 'wc_custom_endpoint' );
+    return __( 'Manage Conference Agenda', 'wc_custom_endpoint' );
 }
 
 /**
@@ -55,7 +55,7 @@ function wc_add_menu_item( $items ) {
     $logout = $items['customer-logout'];
     unset( $items['customer-logout'] );
 
-    $items['superpass'] = __( 'Eventbrite Super Passes', 'wc_custom_endpoint' );
+    $items['manage-agenda'] = __( 'Manage Conference Agenda', 'wc_custom_endpoint' );
 
     $items['customer-logout'] = $logout;
 
@@ -82,8 +82,8 @@ function mount_custom_wc() {
     add_action( 'init', 'add_wc_endpoint' );
     add_filter( 'query_vars', 'add_query_vars' );
     add_filter( 'woocommerce_account_menu_items', 'wc_add_menu_item' );
-    add_filter( 'woocommerce_endpoint_superpass_title', 'wc_endpoint_title' );
-    add_filter( 'woocommerce_account_superpass_endpoint', 'wc_endpoint_content' );
+    add_filter( 'woocommerce_endpoint_manage-agenda_title', 'wc_endpoint_title' );
+    add_filter( 'woocommerce_account_manage-agenda_endpoint', 'wc_endpoint_content' );
 }
 add_action( 'woocommerce_loaded', 'mount_custom_wc' );
 
@@ -111,49 +111,6 @@ register_activation_hook( ESP_PLUGIN_FILE, 'mount_custom_wc_endpoint' );
 register_deactivation_hook( ESP_PLUGIN_FILE, 'unmount_custom_wc_endpoint' );
 
 /**
- * Gather all completed orders and generate our WC data
- *
- * @return void
- * @since 1.0
- */
-function setup_esp_customer() {
-    $user_id = get_current_user_id();
-    if( !$user_id ) {
-        return;
-    }
-    $orders = wc_get_orders( array(
-        'status' => 'wc-completed',
-        'customer_id' => $user_id,
-    ) );
-
-    $esp = ESP();
-    $customer = null;
-    $esp->get_super_passes();
-    foreach( $orders as $order ) {
-        $status = $order->get_status();
-        if( $status === 'completed' ) {
-            $items = $order->get_items();
-            foreach ($items as $item) {
-                $data = $item->get_data();
-                // Compare this item's ID to our Superpass WC ID
-                $found = array_search($data['product_id'], array_column((array)$esp->super_passes, "wc_id"));
-                if ($found !== false) {
-                    // Order found, let's make an object instance of our ESP Customer
-                    $customer = $esp->get_customer_by_id($user_id);
-                    $esp->super_passes[$found]->gather_event_data();
-                    $customer->add_super_pass($esp->super_passes[$found]);
-                }
-            }
-        }
-    }
-
-    if ( $customer ) {
-        $customer->gather_attendance_records();
-    }
-}
-add_action( 'woocommerce_after_register_post_type', 'setup_esp_customer' );
-
-/**
  * Redirect after purchase
  *
  * @return void
@@ -172,3 +129,115 @@ function esp_wc_redirect() {
     }
 }
 add_action( 'template_redirect', 'esp_wc_redirect' );
+
+/**
+ * Split the login and register page
+ *
+ * @since 1.0
+ * @return void
+ */
+function woocommerce_login_split(){
+    global $wp_query;
+    if( $wp_query->query_vars['pagename'] === 'my-account' ):
+    ?>
+    <script type="text/javascript">
+        (function($) {
+            $(document).ready(function () {
+                function getAllUrlParams(url) {
+
+                    // get query string from url (optional) or window
+                    var queryString = url ? url.split('?')[1] : window.location.search.slice(1);
+
+                    // we'll store the parameters here
+                    var obj = {};
+
+                    // if query string exists
+                    if (queryString) {
+
+                        // stuff after # is not part of query string, so get rid of it
+                        queryString = queryString.split('#')[0];
+
+                        // split our query string into its component parts
+                        var arr = queryString.split('&');
+
+                        for (var i = 0; i < arr.length; i++) {
+                            // separate the keys and the values
+                            var a = arr[i].split('=');
+
+                            // set parameter name and value (use 'true' if empty)
+                            var paramName = a[0];
+                            var paramValue = typeof (a[1]) === 'undefined' ? true : a[1];
+
+                            // (optional) keep case consistent
+                            paramName = paramName.toLowerCase();
+                            if (typeof paramValue === 'string') paramValue = paramValue.toLowerCase();
+
+                            // if the paramName ends with square brackets, e.g. colors[] or colors[2]
+                            if (paramName.match(/\[(\d+)?\]$/)) {
+
+                                // create key if it doesn't exist
+                                var key = paramName.replace(/\[(\d+)?\]/, '');
+                                if (!obj[key]) obj[key] = [];
+
+                                // if it's an indexed array e.g. colors[2]
+                                if (paramName.match(/\[\d+\]$/)) {
+                                    // get the index value and add the entry at the appropriate position
+                                    var index = /\[(\d+)\]/.exec(paramName)[1];
+                                    obj[key][index] = paramValue;
+                                } else {
+                                    // otherwise add the value to the end of the array
+                                    obj[key].push(paramValue);
+                                }
+                            } else {
+                                // we're dealing with a string
+                                if (!obj[paramName]) {
+                                    // if it doesn't exist, create property
+                                    obj[paramName] = paramValue;
+                                } else if (obj[paramName] && typeof obj[paramName] === 'string'){
+                                    // if property does exist and it's a string, convert it to an array
+                                    obj[paramName] = [obj[paramName]];
+                                    obj[paramName].push(paramValue);
+                                } else {
+                                    // otherwise add the property
+                                    obj[paramName].push(paramValue);
+                                }
+                            }
+                        }
+                    }
+
+                    return obj;
+                }
+
+                if (!getAllUrlParams().register) {
+                    let elem = document.querySelector('.woocommerce #customer_login .u-column2');
+                    elem.parentNode.removeChild(elem);
+                    elem = document.querySelector('.col-1');
+                    elem.style.float = 'none';
+                    elem.style['margin-right'] = 'auto';
+                    elem.style['margin-left'] = 'auto';
+                } else {
+                    let elem = document.querySelector('.woocommerce #customer_login .u-column1');
+                    elem.parentNode.removeChild(elem);
+                    elem = document.querySelector('.col-2');
+                    elem.style.float = 'none';
+                    elem.style['margin-right'] = 'auto';
+                    elem.style['margin-left'] = 'auto';
+                }
+            });
+        })(jQuery)
+    </script>
+    <?php
+    endif;
+}
+add_action( 'wp_footer', 'woocommerce_login_split', 100 );
+
+add_filter('woocommerce_login_redirect', 'custom_wc_login_redirect', 10, 3);
+function custom_wc_login_redirect( $redirect, $user ) {
+    $redirect = site_url() . '/schedule';
+    return $redirect;
+}
+
+function custom_wc_register_redirect( $redirect ) {
+    return site_url() . '/schedule';
+}
+add_filter('woocommerce_registration_redirect', 'custom_wc_register_redirect', 10, 2);

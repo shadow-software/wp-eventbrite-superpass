@@ -24,7 +24,7 @@ function load_scripts( $hook ) {
 
     // TODO: Switch over to ES6 friendly environment and use webpack
     // Get Vue, we're going to use the development version for now
-    wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue', []);
+    wp_enqueue_script('vue', 'https://cdn.jsdelivr.net/npm/vue/dist/vue.js', []);
 
     // Only load the following if we are on our admin management page
     if ( $hook === 'toplevel_page_eventbrite-superpass') {
@@ -44,10 +44,10 @@ function load_scripts( $hook ) {
         global $esp_settings;
         // Add events to the settings
         $esp_settings['eventbrite']['events'] = $esp->get_events();
+        $esp->get_super_passes();
         foreach( $esp->super_passes as $super_pass ) {
             $super_pass->gather_event_data();
         }
-        $esp->get_super_passes();
         wp_localize_script( 'esp-admin-scripts', 'esp_data', array(
             'settings' => $esp_settings,
             'super_passes' => $esp->super_passes,

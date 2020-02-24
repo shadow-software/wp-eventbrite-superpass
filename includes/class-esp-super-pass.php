@@ -67,12 +67,14 @@ class ESP_Super_Pass {
      *
      * @param $cost
      * @param $name
+     * @param $event
      * @param int $id - If this has already been saved to the DB we don't need to setup again.
      * @since 1.0
      */
     public function __construct( $cost, $name, $event, $id = null) {
         $this->cost = $cost;
         $this->name = $name;
+        $this->event = $event;
 
         if ( ! $id ) {
             // Save to DB
@@ -102,7 +104,7 @@ class ESP_Super_Pass {
      * @since 1.0
      * @access public
      */
-    public function add_add_on_event( $event_id ) {
+    public function add_event( $event_id ) {
         array_push( $this->events, $event_id );
         // Add as meta
         add_post_meta( $this->id, 'ESP_SUPER_PASS_ADDON', $event_id );
@@ -137,6 +139,8 @@ class ESP_Super_Pass {
     public function gather_event_data() {
         $esp = ESP();
         $events = $esp->get_events();
+        $key = array_search( $this->event, array_column( $events, 'id' ) );
+        $this->event = $events[$key];
         foreach( $this->add_on_events as &$event ) {
             if ( ! is_array( $event ) || ! is_object( $event )) {
                 foreach( $events as $event_data ) {
@@ -165,6 +169,7 @@ class ESP_Super_Pass {
         ];
         $result = wp_update_post( $postarr, true );
         update_post_meta( $this->id, 'ESP_SUPER_PASS_COST', $this->cost );
+        update_post_meta( $this->id, 'ESP_SUPER_PASS_EVENT', $this->event );
         return $result !== 0;
     }
 

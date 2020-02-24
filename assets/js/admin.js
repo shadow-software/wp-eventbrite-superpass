@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 id: null,
                 name : "",
                 cost : 0.00,
-                events: [],
+                event : null,
                 add_on_events: [],
             },
             superPassUpdating: false,
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                   data.append('action', 'esp_create_super_pass');
                   data.append('name', this.superPass.name);
                   data.append('cost', this.superPass.cost);
-                  data.append('events', this.superPass.events);
+                  data.append('event', this.superPass.event);
                   data.append('add_ons', this.superPass.add_on_events);
 
                   axios
@@ -151,11 +151,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                       .then(response => {
                           if (response.data.success === true) {
                               this.creatingPass = false;
-                              this.superPass = {
-                                  events : [],
-                                  name : "",
-                                  cost : 0.00,
-                              };
+                              this.resetSuperPass();
                               this.getSuperPasses();
                           } else {
                               this.message.show = true;
@@ -201,7 +197,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 this.superPass = {
                     id: null,
                     name : "",
-                    events: [],
+                    event: null,
                     cost: 0
                 }
             },
@@ -212,9 +208,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 })
                 if(superPass) {
                     superPass = JSON.parse(JSON.stringify(superPass));
-                    superPass.events = superPass.events.map(function(event) {
-                        return event.id;
-                    });
+                    superPass.event = superPass.event.id;
                     if (superPass.add_on_events.length > 0) {
                         superPass.add_on_events = superPass.add_on_events.map(function(event) {
                             return event.id;
@@ -232,7 +226,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                   data.append('id', this.superPass.id);
                   data.append('name', this.superPass.name);
                   data.append('cost', this.superPass.cost);
-                  data.append('events', this.superPass.events);
+                  data.append('event', this.superPass.event);
                   data.append('add_ons', this.superPass.add_on_events);
 
                   axios
@@ -254,13 +248,8 @@ document.addEventListener('DOMContentLoaded', (e) => {
             checkEventbriteData: function () {
                 return this.eventbriteData.clientSecret && this.eventbriteData.appKey;
             },
-            toggleEvent: function(e) {
-                var event_id = e.target.value;
-                if (!this.superPass.events.includes(event_id)) {
-                    this.superPass.events.push(event_id);
-                } else {
-                    this.superPass.events.splice(this.superPass.events.indexOf(event_id), 1);
-                }
+            setEvent: function(e) {
+                this.superPass.event = e.target.value
             },
             toggleAddOn: function(e) {
                 var event_id = e.target.value;
@@ -271,7 +260,7 @@ document.addEventListener('DOMContentLoaded', (e) => {
                 }
             },
             superPassValid: function() {
-                return this.superPass.name && this.superPass.cost && this.superPass.events.length > 0;
+                return this.superPass.name && this.superPass.cost && this.superPass.event;
             }
         }
     });
