@@ -111,18 +111,22 @@ class ESP_Customer {
             'post_type' => 'eb_orders',
             'numberposts' => -1,
             'metaquery' => array(
+                'relation' => 'AND',
                 array(
                     'key' => 'user',
-                    'value' => $this->wp_user_id,
                     'compare' => '=',
+                    'value' => $this->wp_user_id,
                 )
             )
         );
 
-        $posts = get_posts( $args );
+        $data = get_posts( $args );
 
-        foreach( $posts as $post ) {
-            $this->eventbrite_orders[] = get_post_meta( $post->ID );
+        foreach( $data as $post ) {
+            $sample = get_post_meta( $post->ID );
+            if ( $sample['user'][0] === (string)$this->wp_user_id ) {
+                $this->eventbrite_orders[] = $sample;
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <section v-if="purchasedPass" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
+        <section v-if="purchasedPass() && is_logged_in" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
                  style="background-color:#212944;">
             <div class="port">
                 <div class="boldCell">
@@ -26,12 +26,16 @@
         <div class="btTabs tabsVertical" data-open-first="yes" data-open-one="no">
             <ul class="tabsHeader">
                 <li>
-                    <span>{{moment(superPass.event.start.utc, "dddd MMMM Do YYYY")}}</span>
+                    <span v-if="moment(superPass.event.start.utc, 'DD/MM/YYYY') === moment(superPass.event.start.utc, 'DD/MM/YYYY')">{{moment(superPass.event.start.utc, "dddd MMMM Do YYYY")}}</span>
+                    <span v-else >{{moment(superPass.event.start.utc, "dddd MMMM Do")}} - {{moment(superPass.event.end.utc, "dddd MMMM Do YYYY")}}</span>
                 </li>
             </ul>
             <div class="tabPanes accordionPanes">
                 <div class="tabPane">
-                    <div class="tabAccordionTitle on"><span>{{moment(superPass.event.start.utc, "dddd MMMM Do YYYY")}} <b>{{superPass.event.name.text}}</b></span></div>
+                    <div class="tabAccordionTitle on">
+                        <span v-if="moment(superPass.event.start.utc, 'DD/MM/YYYY') === moment(superPass.event.start.utc, 'DD/MM/YYYY')">{{moment(superPass.event.start.utc, "dddd MMMM Do YYYY")}}  <b>{{superPass.event.name.text}}</b></span>
+                        <span v-else >{{moment(superPass.event.start.utc, "dddd MMMM Do")}} - {{moment(superPass.event.end.utc, "dddd MMMM Do YYYY")}}  <b>{{superPass.event.name.text}}</b></span>
+                    </div>
                     <div class="tabAccordionContent" style="display: block;">
                         <div>
                             <div>
@@ -54,7 +58,7 @@
                 </div>
             </div>
         </div>
-        <section v-if="!purchasedPass" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
+        <section v-if="!purchasedPass()" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
                  style="background-color:#212944;">
             <div class="port">
                 <div class="boldCell">
@@ -89,11 +93,11 @@
                                 <hr/>
                                 <div v-html="event.description.html"></div>
                                 <div>
-                                    <div v-if="event.status === 'live' && canPurchase(event.id) && purchasedPass" v-on:click="showModal(event.id)"
+                                    <div v-if="event.status === 'live' && canPurchase(event.id) && purchasedPass && is_logged_in" v-on:click="showModal(event.id)"
                                          class="btBtn btBtn btnFilledStyle btnAccentColor btnSmall btnNormalWidth btnRightPosition btnNoIcon">
                                         <span class="btnInnerText">Buy Tickets</span>
                                     </div>
-                                    <div v-else-if="!canPurchase(event.id) && purchasedPass">
+                                    <div v-else-if="!canPurchase(event.id) && purchasedPass() && is_logged_in">
                                         <span class="btnInnerText">Ticket Purchased</span>
                                     </div>
                                 </div>
@@ -137,6 +141,7 @@
             eventsByDate: {},
             currentEventID: null,
             lastCompleted: null,
+            is_logged_in: esp_data.is_logged_in,
             superPass: esp_data.super_pass,
             customerData: esp_data.customer,
             showSuperPassPrompt: false,
@@ -173,14 +178,6 @@
                     this.dates.push(date);
                 }
             });
-
-            if (/*this.customerData.super_passes.length > 0*/ true) {
-                let e = document.querySelector('#super-pass-purchase-prompt');
-                if (e) {
-                    e.style.display = "none";
-                    this.showSuperPassPrompt = true;
-                }
-            }
         },
         methods: {
             moment: function (date, format) {
@@ -210,12 +207,19 @@
                     });
             },
             purchasedPass: function(){
-                purchasedPass = this.customerData.eventbrite_orders.find( obj => {
+                if( ! esp_data.is_logged_in ) {
+                    return false;
+                }
+                let purchasedPass = this.customerData.eventbrite_orders.find( obj => {
                     return obj.event_id[0] === this.superPass.event.id;
                 });
+
                 return purchasedPass !== undefined;
             },
             canPurchase: function(event_id) {
+                if ( ! esp_data.is_logged_in ) {
+                    return true;
+                }
                 let alreadyPurchased = this.customerData.eventbrite_orders.find( obj => {
                     return obj.event_id[0] === event_id;
                 })

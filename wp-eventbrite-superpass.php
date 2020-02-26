@@ -25,7 +25,7 @@
  * @package ESP
  * @category Core
  * @author Simon Chawla
- * @version 0.0.1
+ * @version 0.8.0
  */
 
 // Exit if accessed directly
@@ -268,7 +268,7 @@ if (!class_exists('WP_Eventbrite_Superpass')) :
 
             // Plugin version
             if (!defined('ESP_VERSION')) {
-                define('ESP_VERSION', '1.0');
+                define('ESP_VERSION', '0.8.0');
             }
 
             // Plugin Folder Path
@@ -459,12 +459,14 @@ if (!class_exists('WP_Eventbrite_Superpass')) :
          */
         public function get_event_by_id($id)
         {
-            if (!count(self::$instance->events) > 0) {
-                return false;
-            }
             if (!isset(self::$instance->events[0]['id'])) {
                 self::$instance->get_events();
             }
+
+            if (!count(self::$instance->events) > 0) {
+                return false;
+            }
+
             $found = array_search($id, array_column((array)self::$instance->events, 'id'));
             return self::$instance->events[$found];
         }

@@ -237,7 +237,7 @@ function custom_wc_login_redirect( $redirect, $user ) {
     return $redirect;
 }
 
-function custom_wc_register_redirect( $redirect ) {
-    return site_url() . '/schedule';
+function custom_wc_register_redirect() {
+    return site_url('/schedule/');
 }
-add_filter('woocommerce_registration_redirect', 'custom_wc_register_redirect', 10, 2);
+add_filter('woocommerce_registration_redirect', 'custom_wc_register_redirect', 2);
