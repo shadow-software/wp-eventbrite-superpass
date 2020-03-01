@@ -53,49 +53,6 @@ function remove_eb_page() {
 }
 register_deactivation_hook( ESP_PLUGIN_FILE, 'remove_eb_page' );
 
-/**
- * Check if the customer has any attending events that conflict with the event requested
- *
- * @param $customer - ESP_Customer Object
- * @param $event_id - ID of Eventbrite event.
- * @param $super_pass_id - Superpass being used to attend this event
- * @return array
- * @since 1.0
- */
-function esp_can_customer_attend( $customer, $event_id, $super_pass_id ) {
-    // Search for event.
-    $esp = ESP();
-    $event = $esp->get_event_by_id( $event_id );
-    if ( $event === false ) {
-        return array( 'result' => false, 'message' => 'Event not found.' );
-    }
-    $event_start_time = strtotime( $event['start']['local'] );
-    $event_end_time = strtotime( $event['end']['local'] );
-    $overlap = false;
-
-    foreach( $customer->attending as $record ) {
-        // Compare the dates of each record and make sure there's no overlap.
-        $cEvent = $esp->get_event_by_id( $record->event_id );
-        $start_time = strtotime( $cEvent['start']['local'] );
-        $end_time = strtotime( $cEvent['end']['local'] );
-
-        if ( $event_start_time < $end_time && $start_time < $event_end_time && ! (!$record->confirmed && (int)$record->event_id === (int)$event_id ) && (int) $super_pass_id === (int) $record->super_pass_id ) {
-            $overlap = true;
-        }
-
-        if ( (int)$event_id === (int)$record->event_id && (int)$super_pass_id === (int)$record->super_pass_id && $record->confirmed ) {
-            // The user already has an attendance record for this event using this superpass and has purchased the eventbrite ticket.
-            return array( 'result' => false, 'message' => 'Already attending this event.' );
-        }
-    }
-
-    if( $overlap ) {
-        return array( 'result' => false, 'message' => 'Already attending an overlapping event' );
-    } else {
-        return array( 'result' => true, 'message' => '' );
-    }
-}
-add_filter( 'esp_can_customer_attend', 'esp_can_customer_attend', 10, 3 );
 
 /**
  * Get a list of Eventbrite events that the current user is attending.
@@ -443,3 +400,85 @@ function download_csv_script() {
 }
 
 add_action( 'add_meta_boxes_workshops', 'add_csv_button' );
+
+/**
+ * Get all available workshops
+ *
+ * @since 1.0
+ * @return array
+ */
+function esp_get_workshops() {
+    $workshops = [];
+    $args = array(
+        'post_type' => 'workshops',
+        'meta_key' => 'date',
+        'orderby' => 'meta_value_num',
+        'order' => 'ASC',
+        'numberposts' => -1,
+    );
+    $results = get_posts( $args );
+    foreach( $results as $post ) {
+        $workshop = new ESP_Workshop( $post->ID );
+        $workshops[] = $workshop;
+    }
+
+    return $workshops;
+}
+add_action( 'esp_get_workshops', 'esp_get_workshops' );
+
+function esp_get_workshop_attendance( $user_id ) {
+    $workshop_attendances = [];
+    global $wpdb;
+    $results = $wpdb->get_results("SELECT ID FROM {$wpdb->posts} LEFT JOIN {$wpdb->postmeta} ON {$wpdb->postmeta}.post_id = {$wpdb->posts}.ID 
+    WHERE post_type = 'workshop_attendance' AND post_status = 'publish' AND {$wpdb->postmeta}.meta_key = 'attendee' AND {$wpdb->postmeta}.meta_value = {$user_id}", OBJECT);
+    foreach( $results as $post ) {
+        $workshop_attendances[] = new ESP_Workshop_Attendance( $post->ID );
+    }
+    return $workshop_attendances;
+}
+add_filter( 'esp_get_workshop_attendance', 'esp_get_workshop_attendance', 10, 1 );
+
+/**
+ * Check if the customer has any attending events that conflict with the event requested
+ *
+ * @param $user_id - WP User
+ * @param $workshop_id - ID of Workshop.
+ * @return array
+ * @since 1.0
+ */
+function esp_check_event_overlap( $user_id, $workshop_id ) {
+    // Search for event.
+    $workshop = new ESP_Workshop( $workshop_id );
+
+    if ( $workshop === false ) {
+        return array( 'result' => false, 'message' => 'Workshop not found.' );
+    }
+
+    $event_start_time = strtotime( "{$workshop->date} {$workshop->start_time}" );
+    $event_end_time = strtotime( "{$workshop->date} {$workshop->end_time}" );
+    $overlap = false;
+
+    $attendance_records = apply_filters( 'esp_get_workshop_attendance', $user_id );
+    foreach( $attendance_records as $record ) {
+        // Compare the dates of each record and make sure there's no overlap.
+        $cWorkshop = new ESP_Workshop( $record->workshop );
+        $start_time = strtotime( "{$cWorkshop->date} {$cWorkshop->start_time}" );
+        $end_time = strtotime( "{$cWorkshop->date} {$cWorkshop->end_time}" );
+
+        if ( (int)$record->workshop === (int)$workshop_id ) {
+            // The user already has an attendance record for this workshop
+            return array( 'result' => false, 'message' => 'Already attending this event.' );
+        }
+
+        if ( $event_start_time < $end_time && $start_time < $event_end_time ) {
+            $overlap = true;
+        }
+    }
+
+    if( $overlap ) {
+        return array( 'result' => false, 'message' => 'Already attending an overlapping event' );
+    } else {
+        return array( 'result' => true, 'message' => 'Success' );
+    }
+}
+add_filter( 'esp_check_event_overlap', 'esp_check_event_overlap', 1, 2 );

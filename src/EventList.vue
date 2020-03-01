@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <section v-if="purchasedPass() && is_logged_in" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
+    <div v-if="ready">
+        <section v-if="purchasedPass && is_logged_in" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
                  style="background-color:#212944;">
             <div class="port">
                 <div class="boldCell">
@@ -43,7 +43,7 @@
                                 <hr/>
                                 <div v-html="superPass.event.description.html"></div>
                                 <div>
-                                    <div v-if="canPurchase(superPass.event.id)" v-on:click="showModal(superPass.event.id)"
+                                    <div v-if="!purchasedPass" v-on:click="showModal(superPass.event.id)"
                                          class="btBtn btBtn btnFilledStyle btnAccentColor btnSmall btnNormalWidth btnRightPosition btnNoIcon">
                                         <span class="btnInnerText">Buy Tickets</span>
                                     </div>
@@ -58,7 +58,7 @@
                 </div>
             </div>
         </div>
-        <section v-if="!purchasedPass()" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
+        <section v-if="!purchasedPass" class="boldSection topSemiSpaced bottomSemiSpaced btDarkSkin gutter inherit"
                  style="background-color:#212944;">
             <div class="port">
                 <div class="boldCell">
@@ -97,7 +97,7 @@
                                          class="btBtn btBtn btnFilledStyle btnAccentColor btnSmall btnNormalWidth btnRightPosition btnNoIcon">
                                         <span class="btnInnerText">Buy Tickets</span>
                                     </div>
-                                    <div v-else-if="!canPurchase(event.id) && purchasedPass() && is_logged_in">
+                                    <div v-else-if="!canPurchase(event.id) && purchasedPass && is_logged_in">
                                         <span class="btnInnerText">Ticket Purchased</span>
                                     </div>
                                 </div>
@@ -127,24 +127,34 @@
             </div>
         </div>
     </div>
+    <div v-else>
+        <spinner :stroke="'#e73f51'" :width="'50px'" :height="'50px'"></spinner>
+    </div>
 </template>
 
 <script>
+    import Spinner from "../src/components/Spinner.vue";
     import MicroModal from 'micromodal';
     import moment from 'moment';
 
     export default {
         name: "EventList",
+        components: {
+            Spinner
+        },
         data: () => ({
-            events: esp_data.super_pass.add_on_events,
+            callsComplete: 0,
+            events: [],
             dates: [],
             eventsByDate: {},
             currentEventID: null,
             lastCompleted: null,
             is_logged_in: esp_data.is_logged_in,
-            superPass: esp_data.super_pass,
-            customerData: esp_data.customer,
+            superPass: [],
+            customerData: [],
             showSuperPassPrompt: false,
+            purchasedPass: false,
+            ready: false,
             modal: {
                 title: "Eventbrite Checkout"
             },
@@ -162,24 +172,58 @@
                 awaitCloseAnimation: false, // [8]
                 debugMode: true // [9]
             });
-            this.events.forEach(event => {
-                let eDate = moment(event.start.utc).format("dddd MMMM Do YYYY");
-                if (!this.eventsByDate[eDate]) {
-                    this.eventsByDate[eDate] = [];
-                }
-                this.eventsByDate[eDate].push(event);
-
-                let found = this.dates.find(date => {
-                    return eDate === date;
-                });
-
-                if (!found) {
-                    let date = moment(event.start.utc).format("dddd MMMM Do");
-                    this.dates.push(date);
-                }
-            });
+            this.getData();
         },
         methods: {
+            getData: function() {
+                let ajaxurl = esp_data.ajax_url;
+
+                let data = new FormData();
+                data.append('action', 'esp_get_customer');
+                axios
+                    .post(ajaxurl, data)
+                    .then(response => {
+                        this.callsComplete ++;
+                        this.customerData = response.data;
+                        if ( this.callsComplete > 1 ) {
+                            this.setup();
+                        }
+                    })
+
+                data = new FormData();
+                data.append('action', 'esp_get_main_pass_data');
+
+                axios
+                    .post(ajaxurl, data)
+                    .then(response => {
+                        this.callsComplete ++;
+                        this.superPass = response.data;
+                        this.events = this.superPass.add_on_events;
+                        if (this.callsComplete > 1) {
+                            this.setup();
+                        }
+                    })
+            },
+            setup: function() {
+                this.events.forEach(event => {
+                    let eDate = moment(event.start.utc).format("dddd MMMM Do YYYY");
+                    if (!this.eventsByDate[eDate]) {
+                        this.eventsByDate[eDate] = [];
+                    }
+                    this.eventsByDate[eDate].push(event);
+
+                    let found = this.dates.find(date => {
+                        return eDate === date;
+                    });
+
+                    if (!found) {
+                        let date = moment(event.start.utc).format("dddd MMMM Do");
+                        this.dates.push(date);
+                    }
+                });
+                this.checkPurchasedPass();
+                this.ready = true;
+            },
             moment: function (date, format) {
                 return moment(date).format(format);
             },
@@ -204,21 +248,22 @@
                     .post(ajaxurl, data)
                     .then( response => {
                        this.customerData = response.data.customer;
+                       this.checkPurchasedPass();
                     });
             },
-            purchasedPass: function(){
-                if( ! esp_data.is_logged_in ) {
+            checkPurchasedPass: function(){
+                if( ! this.is_logged_in ) {
                     return false;
                 }
                 let purchasedPass = this.customerData.eventbrite_orders.find( obj => {
                     return obj.event_id[0] === this.superPass.event.id;
                 });
 
-                return purchasedPass !== undefined;
+                this.purchasedPass = purchasedPass !== undefined;
             },
             canPurchase: function(event_id) {
-                if ( ! esp_data.is_logged_in ) {
-                    return true;
+                if ( ! this.is_logged_in ) {
+                    return false;
                 }
                 let alreadyPurchased = this.customerData.eventbrite_orders.find( obj => {
                     return obj.event_id[0] === event_id;

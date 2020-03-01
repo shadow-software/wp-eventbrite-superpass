@@ -61,31 +61,19 @@ class ESP_Customer {
     }
 
     /**
-     * Gather the attendance records for this customer
+     * Gather the workshop attendance records for this customer
      *
      * @since 1.0
      * @access public
      * @return void
      */
     public function gather_attendance_records() {
-        $args = array(
-            'post_type' => 'ESP_RECORD',
-            'post_status' => 'draft',
-            'numberposts' => -1,
-            'metaquery' => array(
-                array(
-                    'key' => 'ESP_RECORD_USER_ID',
-                    'value' => $this->wp_user_id,
-                    'compare' => '=',
-                )
-            )
-        );
-
-        $posts = get_posts( $args );
-
-        foreach( $posts as $post ) {
-            $record = new ESP_Attendance_Record( null, null, null, $post->ID );
-            $this->attending[] = $record;
+        global $wpdb;
+        $this->attending = array();
+        $results = $wpdb->get_results("SELECT ID FROM {$wpdb->posts} LEFT JOIN {$wpdb->postmeta} ON {$wpdb->postmeta}.post_id = {$wpdb->posts}.ID 
+        WHERE post_type = 'workshop_attendance' AND post_status = 'publish' AND {$wpdb->postmeta}.meta_key = 'attendee' AND {$wpdb->postmeta}.meta_value = {$this->wp_user_id}", OBJECT);
+        foreach( $results as $post ) {
+            $this->attending[] = new ESP_Workshop_Attendance( $post->ID );
         }
     }
 
@@ -100,6 +88,26 @@ class ESP_Customer {
         array_push( $this->super_passes, $super_pass );
     }
 
+    public function check_if_pass_purchased() {
+        if ( empty( $this->eventbrite_orders ) ) {
+            $this->get_eb_orders();
+        }
+        $esp = ESP();
+        $esp->get_super_passes();
+
+        $super_pass = $esp->super_passes[0];
+
+        $pass_found = false;
+        foreach( $this->eventbrite_orders as $order ) {
+            if( $order['event_id'][0] === $super_pass->event ) {
+                $pass_found = true;
+                break;
+            }
+        }
+
+        return $pass_found;
+    }
+
     /**
      * Get Eventbrite orders
      *
@@ -107,6 +115,7 @@ class ESP_Customer {
      * @access public
      */
     public function get_eb_orders() {
+        $this->eventbrite_orders = [];
         $args = array(
             'post_type' => 'eb_orders',
             'numberposts' => -1,

@@ -19,6 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 function get_esp_settings() {
     if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
         $esp = ESP();
+        $esp->compile_settings();
         global $esp_settings;
         // Add events to the settings
         $esp_settings['eventbrite']['events'] = $esp->get_events();
@@ -223,44 +224,6 @@ function esp_delete_super_pass() {
 }
 add_action( 'wp_ajax_esp_delete_super_pass', 'esp_delete_super_pass' );
 
-
-function esp_customer_attend_event() {
-    $result = array(
-        'success' => false,
-        'message' => ""
-    );
-
-    /*
-    if ( isset( $_POST['event_id'] ) && isset( $_POST['super_pass_id']) ) {
-        $esp = ESP();
-        $id = get_current_user_id();
-
-        if ( $id ) {
-            $event_id = $_POST['event_id'];
-            $super_pass_id = $_POST['super_pass_id'];
-            $customer = $esp->get_customer_by_id( $id );
-            // Check for attendance overlaps
-            $check = apply_filters( 'esp_can_customer_attend', $customer, $event_id, $super_pass_id );
-            $result['success'] = $check['result'];
-            $result['message'] = $check['message'];
-
-            if ( $check['result'] === true ) {
-                // No overlaps, add them to event.
-                $record = $customer->attend_event( $event_id, $super_pass_id );
-                $result['result'] = $record;
-            }
-        }
-    }
-    */
-
-    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
-        header( "Content-type: application/json" );
-        echo json_encode( $result );
-        wp_die();
-    }
-}
-add_action( 'wp_ajax_esp_customer_attend_event', 'esp_customer_attend_event' );
-
 function esp_confirm_eb_order() {
     $result = array(
         'success' => false,
@@ -375,3 +338,88 @@ function esp_register_eb_order() {
     }
 }
 add_action( 'wp_ajax_esp_register_eb_order', 'esp_register_eb_order' );
+
+function esp_customer_attend_event() {
+    $result = array(
+        'success' => false,
+        'message' => ""
+    );
+
+    if ( isset( $_POST['workshop'] ) ) {
+        $id = get_current_user_id();
+        $workshop = sanitize_text_field( $_POST['workshop'] );
+
+        if ( $id ) {
+            $customer = new ESP_Customer( $id );
+            $pass_purchased = $customer->check_if_pass_purchased();
+
+            if( $pass_purchased ) {
+                $check = apply_filters( 'esp_check_event_overlap', $id, $workshop );
+                if( $check['result'] === true ) {
+                    $record = new ESP_Workshop_Attendance( false, $workshop, $id );
+                    if ( $record->id ) {
+                        $result = array(
+                            'success' => true,
+                            'message' => "You are now participating in this workshop",
+                            'result' => $record,
+                        );
+                    }
+                } else {
+                    $result['message'] = $check["message"];
+                }
+            } else {
+                $result['message'] = "Pass not yet purchased";
+            }
+        }
+    } else {
+        $result['message'] = "Workshop not selected.";
+    }
+
+    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( "Content-type: application/json" );
+        echo json_encode( $result );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_customer_attend_event', 'esp_customer_attend_event' );
+
+
+function esp_get_main_pass_data() {
+    $esp = ESP();
+    $esp->get_super_passes();
+
+    // For now just use the first super pass
+    $esp->get_events( true );
+    $super_pass = $esp->super_passes[0];
+    $super_pass->gather_event_data();
+
+    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( "Content-type: application/json" );
+        echo json_encode( $super_pass );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_get_main_pass_data', 'esp_get_main_pass_data' );
+add_action( 'wp_ajax_nopriv_esp_get_main_pass_data', 'esp_get_main_pass_data' );
+
+function esp_get_customer() {
+    $customer = array();
+
+    if ( is_user_logged_in() ) {
+        $user_id = get_current_user_id();
+        $customer = new ESP_Customer( $user_id );
+        $customer->get_eb_orders();
+        if( isset( $_POST['attendance'] ) ) {
+            $customer->gather_attendance_records();
+        }
+    }
+
+
+    if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
+        header( "Content-type: application/json" );
+        echo json_encode( $customer );
+        wp_die();
+    }
+}
+add_action( 'wp_ajax_esp_get_customer', 'esp_get_customer' );
+add_action( 'wp_ajax_nopriv_esp_get_customer', 'esp_get_customer' );

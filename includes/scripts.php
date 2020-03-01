@@ -41,6 +41,7 @@ function load_scripts( $hook ) {
         wp_enqueue_script( 'esp-admin-scripts' );
         wp_enqueue_script( 'esp-misc-scripts' );
         $esp = ESP();
+        $esp->compile_settings();
         global $esp_settings;
         // Add events to the settings
         $esp_settings['eventbrite']['events'] = $esp->get_events();
@@ -72,21 +73,16 @@ function load_frontend_scripts() {
     /* TODO: Use webpack for all dependencies, right now there are some libraries used outside of our Vue Components,
         so our dependencies need to be split up this way for now.
     */
-    if( isset( $wp_query->query_vars['superpass'] ) ) {
-        wp_register_script( 'esp-frontend-scripts', $js_dir . 'frontEnd.js', ['axios'], ESP_VERSION, false );
-        $customer = apply_filters( 'esp_get_customer_data', '' );
-        $attending_events = apply_filters( 'esp_get_extended_attendance_record', '' );
-        $page = get_page_by_title( 'Eventbrite Checkout', OBJECT );
-        wp_localize_script( 'esp-frontend-scripts', 'esp_data', array( 'customer_data' => $customer, 'eb_checkout_url' =>  $page->guid, 'attending_events' => $attending_events ) );
-        wp_enqueue_script( 'esp-frontend-scripts' );
-    }
-
-    if ( isset( $wp_query->query_vars['superpass'] ) || $wp_query->query_vars['pagename'] === 'eventbrite-checkout' ) {
+    if( isset( $wp_query->query_vars['manage-agenda'] ) ) {
         wp_enqueue_script( 'axios', 'https://unpkg.com/axios@0.19.0/dist/axios.min.js', [], '0.19.0' );
         wp_enqueue_style( 'extra', $css_dir . 'extra.css' );
         wp_register_script( 'esp-misc-scripts', $js_dir . 'helpers.js', [], ESP_VERSION, false );
-        wp_localize_script( 'esp-misc-scripts', 'ajax_object', array( 'ajax_url' => admin_url('admin-ajax.php', '') ) );
+        wp_localize_script( 'esp-misc-scripts', 'ajax_object', array( 'ajax_url' => admin_url( 'admin-ajax.php', '' ) ) );
         wp_enqueue_script( 'esp-misc-scripts' );
+        wp_register_script( 'esp-frontend-scripts', $js_dir . 'frontEnd.js', ['axios'], ESP_VERSION, false );
+        $workshops = apply_filters( 'esp_get_workshops', '' );
+        wp_localize_script( 'esp-frontend-scripts', 'esp_data', array( 'workshops' => $workshops ) );
+        wp_enqueue_script( 'esp-frontend-scripts' );
     }
 
     if ( isset( $wp_query->query_vars['esp-event-list'] ) ) {

@@ -59,14 +59,14 @@
                     <footer class="modal__footer">
                         <button v-on:click="attendEvent" v-if="canAttend" class="modal__btn modal__btn-primary">
                             <span v-if="!updating">Attend This Event</span>
-                            <spinner v-if="updating"></spinner>
+                            <spinner v-if="updating" :stroke="'#FFFFFF'" :width="'10px'" :height="'10px'"></spinner>
                         </button>
                         <a :href="checkoutURL + '?event_id=' + currentRecord.id + '&attendance=' + currentRecord.record_id" v-if="!canAttend && currentRecord.order_id === null" class="modal__btn modal__btn-primary">
                             <span>Get your ticket</span>
                         </a>
                         <button v-on:click="leaveEvent" v-if="!canAttend" class="modal__btn modal__btn-primary">
                             <span v-if="!updating">Leave This Event</span>
-                            <spinner v-if="updating"></spinner>
+                            <spinner v-if="updating" :stroke="'#FFFFFF'" :width="'10px'" :height="'10px'"></spinner>
                         </button>
                         <button class="modal__btn" data-micromodal-close aria-label="Close this dialog window">Close</button>
                     </footer>
@@ -78,7 +78,6 @@
 
 <script>
 import VueCal from 'vue-cal';
-import Spinner from "../src/components/Spinner.vue";
 import MicroModal from 'micromodal';
 import moment from 'moment';
 

@@ -1,8 +1,8 @@
 import Vue from 'vue';
-import FrontEnd from '../src/FrontEnd.vue';
+import WorkShopPicker from '../src/WorkShopPicker.vue';
 
 document.addEventListener('DOMContentLoaded', function () {
     new Vue({
-        render: h => h(FrontEnd),
+        render: h => h(WorkShopPicker),
     }).$mount('#esp-front-end');
 });

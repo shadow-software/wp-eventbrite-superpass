@@ -5,7 +5,7 @@
  * Description: WP Event Superpass allows event organizers using eventbrite to sell all inclusive passes that gives users access to any event that they are managing.
  * Author: Simon Chawla
  * Author URI: https://shadowsoftware.solutions
- * Version: 0.0.1
+ * Version: 0.9.0
  * Text Domain: wp-eventbrite-superpass
  * Domain Path: languages
  *
@@ -24,8 +24,8 @@
  *
  * @package ESP
  * @category Core
- * @author Simon Chawla
- * @version 0.8.0
+ * @author Shadow Software Solutions
+ * @version 0.9.0
  */
 
 // Exit if accessed directly
@@ -168,7 +168,7 @@ if (!class_exists('WP_Eventbrite_Superpass')) :
                     self::$instance->eb_sdk->setup_client(self::$instance->token);
                 }
 
-                self::$instance->compile_settings();
+                //self::$instance->compile_settings();
             }
 
             return self::$instance;
@@ -250,6 +250,8 @@ if (!class_exists('WP_Eventbrite_Superpass')) :
             require_once ESP_PLUGIN_DIR . 'includes/class-esp-super-pass.php';
             require_once ESP_PLUGIN_DIR . 'includes/class-esp-customer.php';
             require_once ESP_PLUGIN_DIR . 'includes/class-esp-attendance-record.php';
+            require_once ESP_PLUGIN_DIR . 'includes/class-esp-workshop.php';
+            require_once ESP_PLUGIN_DIR . 'includes/class-esp-workshop-attendance.php';
 
             // Misc
             require_once ESP_PLUGIN_DIR . 'includes/scripts.php';
@@ -268,7 +270,7 @@ if (!class_exists('WP_Eventbrite_Superpass')) :
 
             // Plugin version
             if (!defined('ESP_VERSION')) {
-                define('ESP_VERSION', '0.8.0');
+                define('ESP_VERSION', '0.9.1');
             }
 
             // Plugin Folder Path
@@ -459,11 +461,11 @@ if (!class_exists('WP_Eventbrite_Superpass')) :
          */
         public function get_event_by_id($id)
         {
-            if (!isset(self::$instance->events[0]['id'])) {
+            if ( !isset(self::$instance->events[0]['id']) ) {
                 self::$instance->get_events();
             }
 
-            if (!count(self::$instance->events) > 0) {
+            if ( !count(self::$instance->events) > 0 ) {
                 return false;
             }
 
@@ -482,31 +484,74 @@ if (!class_exists('WP_Eventbrite_Superpass')) :
          */
         public function get_events($full_description = false)
         {
-            if (empty(self::$instance->events) && isset (self::$instance->eb_sdk->client)) {
-                self::$instance->events = self::$instance->eb_sdk->client->get('/users/me/events', ['venue', 'ticket_availability'], ['page_size' => 200, 'status' => 'live,draft']);
-                self::$instance->events = self::$instance->events['events'];
+            // Prevent multiple API calls in the same lifecycle
+            if ( defined( 'ESP_SEARCHED_EVENTS' ) ) {
+                return self::$instance->events;
             }
 
-            if ($full_description) {
-                $batch_request = [];
-                foreach (self::$instance->events as $event) {
-                    $batch = array(
-                        "method" => "GET",
-                        "relative_url" => "events/{$event['id']}/description"
-                    );
-                    $batch_request[] = (object)$batch;
+            // We only want to check for the events every so often.
+            $expire_after = 15;
+
+            // Check to see when the events had last been called
+            if( isset($_SESSION['first_call']) ){
+
+                //Find out how long it's been since the last API call
+                $time_elapsed = time() - $_SESSION['first_call'];
+
+                //Convert our minutes into seconds.
+                $expire_after_seconds = $expire_after * 60;
+
+                //Check to see if they have been inactive for too long.
+                if($time_elapsed >= $expire_after_seconds){
+                    // Erase the events variable from session
+                    unset($_SESSION['esp_events']);
+                    $_SESSION['first_call'] = time();
                 }
-                $result = self::$instance->eb_sdk->client->post('/batch/', array('batch' => json_encode($batch_request)));
-                $i = 0;
-                foreach ($result as $data) {
-                    if (isset($data['code']) && $data['code'] === 200) {
-                        $body = json_decode($data['body']);
-                        self::$instance->events[$i]['description']['html'] = $body->description;
+
+            } else {
+                //Assign the current timestamp as the user's
+                //latest activity
+                $_SESSION['first_call'] = time();
+            }
+
+            $last_call_full_desc = null;
+            if ( isset( $_SESSION['last_call_full_desc'] ) ) {
+                $last_call_full_desc = $_SESSION['last_call_full_desc'];
+            }
+
+            if ( $last_call_full_desc !== $full_description || ! isset( $_SESSION['esp_events'] ) ) {
+                if (empty(self::$instance->events) && isset (self::$instance->eb_sdk->client)) {
+                    self::$instance->events = self::$instance->eb_sdk->client->get('/users/me/events', ['venue', 'ticket_availability'], ['page_size' => 200, 'status' => 'live,draft']);
+                    self::$instance->events = self::$instance->events['events'];
+                }
+
+                if ($full_description) {
+                    $batch_request = [];
+                    foreach (self::$instance->events as $event) {
+                        $batch = array(
+                            "method" => "GET",
+                            "relative_url" => "events/{$event['id']}/description"
+                        );
+                        $batch_request[] = (object)$batch;
                     }
-                    $i++;
+                    $result = self::$instance->eb_sdk->client->post('/batch/', array('batch' => json_encode($batch_request)));
+                    $i = 0;
+                    foreach ($result as $data) {
+                        if (isset($data['code']) && $data['code'] === 200) {
+                            $body = json_decode($data['body']);
+                            self::$instance->events[$i]['description']['html'] = $body->description;
+                        }
+                        $i++;
+                    }
                 }
+
+                $_SESSION['esp_events'] = self::$instance->events;
+            } else {
+                self::$instance->events = $_SESSION['esp_events'];
             }
 
+            define( 'ESP_SEARCHED_EVENTS', true );
+            $_SESSION['last_call_full_desc'] = $full_description;
             return self::$instance->events;
         }
 
@@ -539,11 +584,11 @@ if (!class_exists('WP_Eventbrite_Superpass')) :
         /**
          * Setup WP Eventbrite Superpass' global settings
          *
-         * @access private
+         * @access public
          * @return void
          * @since 1.0
          */
-        private function compile_settings()
+        public function compile_settings()
         {
             global $esp_settings;
 
